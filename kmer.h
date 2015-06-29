@@ -39,33 +39,33 @@ struct Kmer {
         init(seq, offset, k);
     }
 
-    void init(word_t *seq, int offset, int k) {
-        seq += offset / kCharsPerWord;
-        offset %= kCharsPerWord;
-        offset <<= 1;
+    // void init(word_t *seq, int offset, int k) {
+    //     seq += offset / kCharsPerWord;
+    //     offset %= kCharsPerWord;
+    //     offset <<= 1;
 
-        int used_words = (k + kCharsPerWord - 1) / kCharsPerWord;
+    //     int used_words = (k + kCharsPerWord - 1) / kCharsPerWord;
 
-        if (offset == 0) {
-            std::memcpy(data_, seq, sizeof(word_t) * used_words);
-        } else {
-            for (int i = 0; i < used_words-1; ++i) {
-                data_[i] = (seq[i] << offset) | (seq[i+1] >> (kBitsPerWord - offset));
-            }
+    //     if (offset == 0) {
+    //         std::memcpy(data_, seq, sizeof(word_t) * used_words);
+    //     } else {
+    //         for (int i = 0; i < used_words-1; ++i) {
+    //             data_[i] = (seq[i] << offset) | (seq[i+1] >> (kBitsPerWord - offset));
+    //         }
 
-            data_[used_words-1] = seq[used_words-1] << offset;
-            if (offset + k * 2 > (int)kBitsPerWord * used_words) {
-                data_[used_words-1] |= seq[used_words] >> (kBitsPerWord - offset) % kBitsPerWord;
-            }
-        }
+    //         data_[used_words-1] = seq[used_words-1] << offset;
+    //         if (offset + k * 2 > (int)kBitsPerWord * used_words) {
+    //             data_[used_words-1] |= seq[used_words] >> (kBitsPerWord - offset) % kBitsPerWord;
+    //         }
+    //     }
 
-        if (k % kCharsPerWord != 0) {
-            uint32_t clean_shift = (kCharsPerWord - k % kCharsPerWord) << 1;
-            data_[used_words-1] = data_[used_words-1] >> clean_shift << clean_shift;
-        }
+    //     if (k % kCharsPerWord != 0) {
+    //         uint32_t clean_shift = (kCharsPerWord - k % kCharsPerWord) << 1;
+    //         data_[used_words-1] = data_[used_words-1] >> clean_shift << clean_shift;
+    //     }
 
-        memset(data_ + used_words, 0, sizeof(word_t) * (kNumWords - used_words));
-    }
+    //     memset(data_ + used_words, 0, sizeof(word_t) * (kNumWords - used_words));
+    // }
 
     ~Kmer() {}
 
