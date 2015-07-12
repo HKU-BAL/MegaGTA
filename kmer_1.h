@@ -1,6 +1,12 @@
 #include <stdint.h>
 #include <string>
 #include <stdexcept>
+#include <algorithm>
+#include "city.h"
+//debug
+#include <iostream>
+#include <bitset>
+#include <string.h>
 
 using namespace std;
 
@@ -9,8 +15,8 @@ class Kmer {
 		static const int MAX_NUCL_KMER_SIZE = 64;
 		static const int MAX_PROT_KMER_SIZE = 24;
 
-	protected:
-		uint64_t kmers[2];
+	public: //protected
+		uint64_t kmers[2] = {};
 		int k;
 		int l;
 		int last_fill;
@@ -21,13 +27,23 @@ class Kmer {
 		int char_mask = 0x3; // 11
 		int items_per_bucket = 32;
 
+	protected:
+		Kmer(int bits_to_shift, int char_mask, int items_per_bucket, int k) : bits_to_shift(bits_to_shift), char_mask(char_mask), items_per_bucket(items_per_bucket), k(k) {
+			l = (int) ceil(k / ((double)items_per_bucket));
+			last_fill = items_per_bucket - (items_per_bucket * l - k);
+			uint64_t tmp = 0;
+			for (int index = 0; index < last_fill; index++) {
+				tmp = (tmp << bits_to_shift) | char_mask;
+			}
+			last_mask = tmp;
+		}
+
+
 	public:
-		virtual uint8_t charToByte(char c);
-		virtual char intToChar(int i);
-		virtual void shiftRight(char c);
-		virtual void shiftLeft(char c);
-		// virtual void shiftRight(uint8_t b);
-		// virtual void shiftLeft(uint8_t b);
+		virtual uint8_t charToByte(char c) = 0;
+		virtual char intToChar(int i) = 0;
+		virtual void shiftRight(char c) = 0;
+		virtual void shiftLeft(char c) = 0;
 
 		int length() {
 			return k;
@@ -35,17 +51,17 @@ class Kmer {
 		int packedLength() {
 			return l;
 		}
-		long getPart(int index) {
+		uint64_t getPart(int index) {
 			return kmers[index];
 		}
-		long* getPackedKmers() {
+		uint64_t* getPackedKmers() {
 			return kmers;
 		}
 
 		void initialize(char char_kmer[]) {
 			uint8_t b;
 
-			for (int index = 0; index < sizeof(char_kmer); ++index) {
+			for (int index = 0; index < strlen(char_kmer); ++index) {
 				b = charToByte(char_kmer[index]);
 				if (b == -1) {
 					throw std::invalid_argument("Kmer contains one or more invalid bases");
@@ -87,20 +103,21 @@ class Kmer {
 		}
 
 	public:
-		string decodePacked(uint64_t in_kmer[]){
+		string decodePacked(){
 			string buf;
 			for (int seg = l; seg > 0; seg--) {
 				int index = items_per_bucket;
 				if (seg == 1) {
 					index = last_fill;
 				}
-				uint64_t this_k = (seg == 2)? in_kmer[1] : in_kmer[0];
+				uint64_t this_k = (seg == 2)? kmers[1] : kmers[0];
 				for (; index > 0; index--) {
-					string.append( intToChar((int) (this_k & char_mask)) );
+					buf.append(1, intToChar((int) (this_k & char_mask)) );
 					this_k = this_k >> bits_to_shift;
 				}
 			}
-			return buf.reverse();
+			reverse(buf.begin(), buf.end());
+			return buf;
 		}
 
 		bool equals(const Kmer &kmer) const {
