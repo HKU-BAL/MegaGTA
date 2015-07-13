@@ -1,11 +1,11 @@
+#ifndef KMER_1_H__
+#define KMER_1_H__
+
 #include <stdint.h>
 #include <string>
 #include <stdexcept>
 #include <algorithm>
 #include "city.h"
-//debug
-#include <iostream>
-#include <bitset>
 #include <string.h>
 
 using namespace std;
@@ -28,6 +28,7 @@ class Kmer {
 		int items_per_bucket = 32;
 
 	protected:
+		Kmer() {}
 		Kmer(int bits_to_shift, int char_mask, int items_per_bucket, int k) : bits_to_shift(bits_to_shift), char_mask(char_mask), items_per_bucket(items_per_bucket), k(k) {
 			l = (int) ceil(k / ((double)items_per_bucket));
 			last_fill = items_per_bucket - (items_per_bucket * l - k);
@@ -132,3 +133,4 @@ class Kmer {
 		}
 };
 
+#endif

@@ -1,15 +1,30 @@
+#ifndef PROT_KMER_H__
+#define PROT_KMER_H__
+
 #include "kmer_1.h"
 #include <math.h>
 #include <string.h>
-#include <iostream>
-
-#include <bitset>
+#include <algorithm>
 
 
 class ProtKmer : public Kmer {
 	public:
+		ProtKmer() : Kmer() {}
 		ProtKmer(char char_kmer[]) : Kmer(0x5, 0x1F, 12, strlen(char_kmer)) {
-			setUp();
+			//setUp
+			fill_n(ascii_map, 127, 31);
+			for (int i = 0; i < 20; ++i) {
+				// ARNDCQEGHI
+				// LKMFPSTWYV
+				ascii_map[(int)("ARNDCQEGHIarndcqeghi"[i])] = (uint8_t) ("01234567890123456789"[i] - '0'); 
+				ascii_map[(int)("LKMFPSTWYVlkmfpstwyv"[i])] = (uint8_t) ("01234567890123456789"[i] - '0' + 10);
+				if (i <= 10){
+					int_to_char[(int)("0123456789"[i] - '0')] = "arndcqeghi"[i];
+					int_to_char[(int)("01234567890123456789"[i] - '0' + 10)] = "lkmfpstwyv"[i];
+				}				
+			}
+			ascii_map['*'] = 10;
+			int_to_char[10] = '*';
 			initialize(char_kmer);
 		}
 
@@ -23,26 +38,27 @@ class ProtKmer : public Kmer {
 	// 		setUp();
 	// 	}
 
-	private:
+	public:
 		uint8_t ascii_map[127];
+	private:
 		char int_to_char[127];
 
-	private:
-		void setUp() {
-
-			for (int i = 0; i < 20; ++i) {
-				// ARNDCQEGHI
-				// LKMFPSTWYV
-				ascii_map[(int)("ARNDCQEGHIarndcqeghi"[i])] = (uint8_t) ("01234567890123456789"[i] - '0'); 
-				ascii_map[(int)("LKMFPSTWYVlkmfpstwyv"[i])] = (uint8_t) ("01234567890123456789"[i] - '0' + 10);
-				if (i <= 10){
-					int_to_char[(int)("0123456789"[i] - '0')] = "arndcqeghi"[i];
-					int_to_char[(int)("01234567890123456789"[i] - '0' + 10)] = "lkmfpstwyv"[i];
-				}				
-			}
-			ascii_map['*'] = 10;
-			int_to_char[10] = '*';
-		}
+	// private:
+	// 	void setUp() {
+	// 		fill_n(ascii_map, 127, 31);
+	// 		for (int i = 0; i < 20; ++i) {
+	// 			// ARNDCQEGHI
+	// 			// LKMFPSTWYV
+	// 			ascii_map[(int)("ARNDCQEGHIarndcqeghi"[i])] = (uint8_t) ("01234567890123456789"[i] - '0'); 
+	// 			ascii_map[(int)("LKMFPSTWYVlkmfpstwyv"[i])] = (uint8_t) ("01234567890123456789"[i] - '0' + 10);
+	// 			if (i <= 10){
+	// 				int_to_char[(int)("0123456789"[i] - '0')] = "arndcqeghi"[i];
+	// 				int_to_char[(int)("01234567890123456789"[i] - '0' + 10)] = "lkmfpstwyv"[i];
+	// 			}				
+	// 		}
+	// 		ascii_map['*'] = 10;
+	// 		int_to_char[10] = '*';
+	// 	}
 
 	public:
 		virtual void shiftRight(char c) {
@@ -58,3 +74,5 @@ class ProtKmer : public Kmer {
 			return int_to_char[i];
 		}
 };
+
+#endif

@@ -1,13 +1,20 @@
+#ifndef PROT_KMER_GENERATOR_H__
+#define PROT_KMER_GENERATOR_H__
+
+
 #include <stdint.h>
 #include <string>
 #include <stdexcept>
 #include <ctype.h>
+#include "kmer_1.h"
+#include "prot_kmer.h"
+
 
 class ProtKmerGenerator {
 	private:
 		string bases_;
 		int k_;
-		Kmer next_;
+		ProtKmer next_;
 		bool has_next;
 
 		int index_;
@@ -16,12 +23,10 @@ class ProtKmerGenerator {
 		bool model_only_ = false;
 
 	public:
-		ProtKmerGenerator(string &seq, int k) {
-			ProtKmerGenerator(seq, k, false);
-		}
+		ProtKmerGenerator(string &seq, int k) : ProtKmerGenerator(seq, k, false) {}
 
 		ProtKmerGenerator(string &seq, int k, bool model_only) {
-			if (k > Kmer.max_prot_kmer_size) {
+			if (k > Kmer::MAX_PROT_KMER_SIZE) {
 				throw std::invalid_argument("K-mer size cannot be larger than 24");
 			}
 
@@ -41,10 +46,10 @@ class ProtKmerGenerator {
 			return has_next;
 		}
 
-		Kmer next() {
+		ProtKmer next() {
 			// Kmer ret = next_;
 			cur_model_position_ = position_;
-			findNextKmer(k-1);
+			findNextKmer(k_-1);
 			return next_;
 		}
 
@@ -60,8 +65,8 @@ class ProtKmerGenerator {
 					}
 					klength = 0;
 				} else {
-					if (!model_only_ || (model_only_ && (base != '.' && proteinAlphabet.contains(base) && base != '*'))) {
-						if (ProtBinMapping.asciiMap[base] == -1) {
+					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[base] != 31 && base != '*'))) {
+						if (next_.ascii_map[base] == 31) {
 							throw std::invalid_argument("Unknown prot base" + base);
 						}
 						kmer_str[klength] = base;
@@ -94,11 +99,12 @@ class ProtKmerGenerator {
 					}
 					klength = 0;
 				} else {
-					if (!model_only_ || (model_only_ && (base != '.' && proteinAlphabet.contains(base) && base != '*'))) {
-						if (ProtBinMapping.asciiMap[base] == -1) {
+					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[base] != 31 && base != '*'))) {
+						if (next_.ascii_map[base] == 31) {
 							throw std::invalid_argument("Unknown prot base" + base);
 						}
-						next_ = next_.shiftLeft(base);
+						// next_ = next_.shiftLeft(base);
+						next_.shiftLeft(base);
 						position_++;
 						klength++;
 					}
@@ -109,7 +115,7 @@ class ProtKmerGenerator {
 				}
 			}
 
-			if (klength != k) {
+			if (klength != k_) {
 				has_next = false;
 			}
 		}
@@ -119,4 +125,6 @@ class ProtKmerGenerator {
 		}
 
 
-}
+};
+
+#endif
