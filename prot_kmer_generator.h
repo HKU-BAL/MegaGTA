@@ -8,11 +8,12 @@
 #include <ctype.h>
 #include "kmer_1.h"
 #include "prot_kmer.h"
+#include <string.h>
 
 
 class ProtKmerGenerator {
 	private:
-		string bases_;
+		std::string bases_;
 		int k_;
 		ProtKmer next_;
 		bool has_next;
@@ -22,10 +23,14 @@ class ProtKmerGenerator {
 		int cur_model_position_;
 		bool model_only_ = false;
 
-	public:
-		ProtKmerGenerator(string &seq, int k) : ProtKmerGenerator(seq, k, false) {}
+		int found_kmer_count = 0;
 
-		ProtKmerGenerator(string &seq, int k, bool model_only) {
+	public:
+		ProtKmerGenerator() {}
+
+		ProtKmerGenerator(const std::string &seq, int k) : ProtKmerGenerator(seq, k, false) {}
+
+		ProtKmerGenerator(const std::string &seq, int k, bool model_only) {
 			if (k > Kmer::MAX_PROT_KMER_SIZE) {
 				throw std::invalid_argument("K-mer size cannot be larger than 24");
 			}
@@ -46,16 +51,18 @@ class ProtKmerGenerator {
 			return has_next;
 		}
 
-		ProtKmer next() {
-			// Kmer ret = next_;
-			cur_model_position_ = position_;
-			findNextKmer(k_-1);
+		ProtKmer next() {			
+			if (found_kmer_count > 0) {				
+				findNextKmer(k_-1);
+			}
+			cur_model_position_ = position_;	
+			found_kmer_count++;				
 			return next_;
 		}
 
 	private:
 		bool getFirstKmer(int klength) {
-			char kmer_str[k_];
+			std::string kmer_str(k_, '\0');
 			while (index_ < bases_.length()) {
 				char base = bases_[index_++];
 
@@ -67,7 +74,7 @@ class ProtKmerGenerator {
 				} else {
 					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[base] != 31 && base != '*'))) {
 						if (next_.ascii_map[base] == 31) {
-							throw std::invalid_argument("Unknown prot base" + base);
+							throw std::domain_error("Unknown prot base" + base);
 						}
 						kmer_str[klength] = base;
 						position_++;
@@ -78,7 +85,6 @@ class ProtKmerGenerator {
 						cur_model_position_ = position_;
 						next_ = ProtKmer(kmer_str);
 						return true;
-						// return new ProtKmer(kmer_str);
 					}
 				}
 			}
@@ -103,7 +109,6 @@ class ProtKmerGenerator {
 						if (next_.ascii_map[base] == 31) {
 							throw std::invalid_argument("Unknown prot base" + base);
 						}
-						// next_ = next_.shiftLeft(base);
 						next_.shiftLeft(base);
 						position_++;
 						klength++;

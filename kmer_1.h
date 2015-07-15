@@ -30,7 +30,7 @@ class Kmer {
 	protected:
 		Kmer() {}
 		Kmer(int bits_to_shift, int char_mask, int items_per_bucket, int k) : bits_to_shift(bits_to_shift), char_mask(char_mask), items_per_bucket(items_per_bucket), k(k) {
-			l = (int) ceil(k / ((double)items_per_bucket));
+			l = (k + items_per_bucket - 1) / items_per_bucket;
 			last_fill = items_per_bucket - (items_per_bucket * l - k);
 			uint64_t tmp = 0;
 			for (int index = 0; index < last_fill; index++) {
@@ -59,12 +59,12 @@ class Kmer {
 			return kmers;
 		}
 
-		void initialize(char char_kmer[]) {
+		void initialize(const string &char_kmer) {
 			uint8_t b;
 
-			for (int index = 0; index < strlen(char_kmer); ++index) {
+			for (int index = 0; index < char_kmer.size(); ++index) {
 				b = charToByte(char_kmer[index]);
-				if (b == -1) {
+				if (b == 31) {
 					throw std::invalid_argument("Kmer contains one or more invalid bases");
 				}
 
@@ -97,6 +97,7 @@ class Kmer {
 				kmers[1] &= last_mask;
 
 				kmers[0] = (kmers[0] << bits_to_shift) | (overflow);
+				kmers[0] = kmers[0] << (64 - items_per_bucket * bits_to_shift) >> (64 - items_per_bucket * bits_to_shift);
 			} else {
 				kmers[0] = (kmers[0] << bits_to_shift) | ((uint64_t) b & char_mask);
 				kmers[0] &= last_mask;
@@ -104,11 +105,11 @@ class Kmer {
 		}
 
 	public:
-		string decodePacked(){
+		string decodePacked() {
 			string buf;
 			for (int seg = l; seg > 0; seg--) {
 				int index = items_per_bucket;
-				if (seg == 1) {
+				if (seg == l) {
 					index = last_fill;
 				}
 				uint64_t this_k = (seg == 2)? kmers[1] : kmers[0];
@@ -128,7 +129,19 @@ class Kmer {
 			return true;
 		}
 
-		uint64_t hashCode() {
+		// const Kmer &operator = (const Kmer &kmer) {
+	 //        memcpy(kmers, kmer.kmers, sizeof(kmers[0]) * 2);
+	 //        return *this;
+	 //    }
+
+		bool operator ==(const Kmer &kmer) const {
+			if (kmers[0] != kmer.kmers[0] || kmers[1] != kmer.kmers[1]) {
+				return false;
+			}
+			return true;
+		}
+
+		uint64_t hash() const {
 			return CityHash64((const char*)kmers, sizeof(kmers[0]) * 2);
 		}
 };
