@@ -23,8 +23,6 @@ class ProtKmerGenerator {
 		int cur_model_position_;
 		bool model_only_ = false;
 
-		int found_kmer_count = 0;
-
 	public:
 		ProtKmerGenerator() {}
 
@@ -36,7 +34,8 @@ class ProtKmerGenerator {
 			}
 
 			if (seq.length() < k) {
-				throw std::invalid_argument("Sequence length is less than the kmer length");
+				// throw std::invalid_argument("Sequence length is less than the kmer length");
+				has_next = false;
 			}
 
 			bases_ = seq;
@@ -51,13 +50,11 @@ class ProtKmerGenerator {
 			return has_next;
 		}
 
-		ProtKmer next() {			
-			if (found_kmer_count > 0) {				
-				findNextKmer(k_-1);
-			}
-			cur_model_position_ = position_;	
-			found_kmer_count++;				
-			return next_;
+		ProtKmer next() {
+			ProtKmer ret = next_;
+			cur_model_position_ = position_;
+			findNextKmer(k_ -1);
+			return ret;
 		}
 
 	private:
@@ -73,12 +70,16 @@ class ProtKmerGenerator {
 					klength = 0;
 				} else {
 					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[base] != 31 && base != '*'))) {
-						if (next_.ascii_map[base] == 31) {
-							throw std::domain_error("Unknown prot base" + base);
+						if (next_.ascii_map[base] == 31 && base != 'X') {
+							throw std::domain_error("Unknown prot base");
 						}
 						kmer_str[klength] = base;
 						position_++;
 						klength++;
+					}
+
+					if (base == 'X') {
+						klength = 0;
 					}
 
 					if (klength == k_) {
@@ -106,12 +107,16 @@ class ProtKmerGenerator {
 					klength = 0;
 				} else {
 					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[base] != 31 && base != '*'))) {
-						if (next_.ascii_map[base] == 31) {
-							throw std::invalid_argument("Unknown prot base" + base);
+						if (next_.ascii_map[base] == 31 && base != 'X') {
+							throw std::invalid_argument("Unknown prot base");
 						}
-						next_.shiftLeft(base);
-						position_++;
-						klength++;
+						if (base != 'X') {
+							next_.shiftLeft(base);
+							klength++;
+						} else {
+							klength = 0;
+						}
+						position_++;						
 					}
 
 					if (klength == k_) {

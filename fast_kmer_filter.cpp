@@ -41,49 +41,51 @@ int main(int argc, char **argv) {
         ProtKmerGenerator kmers = ProtKmerGenerator(string_seq, 15, true); // kmer = 45
         while (kmers.hasNext()) {
         	ProtKmer temp = kmers.next();
-        	cout << "seeds = " << temp.decodePacked();
+        	// cout << "seeds = " << temp.decodePacked();
         	std::pair<HashSet<ProtKmer>::iterator, bool> result = kmerSet.insert(temp);
-        	cout << " result: " << result.second << endl;
+        	// cout << " result: " << result.second << endl;
         }
     }
 
     
 
     while (kseq_read(seq2) >= 0) {
-    	// printf("%s\n", seq2->seq.s); 	
+    	printf("%s\n", seq2->seq.s); 	
     	string string_seq(seq2->seq.s);
     	string string_name(seq2->name.s);
-    	string string_comment(seq2->comment.s);
+    	string string_comment;
+    	if (seq2->comment.l) 
+    		string_comment = string(seq2->comment.s); 
+    	else 
+    		string_comment = "";
 
     	vector<ProtKmerGenerator> kmer_gens;
     	// ProtKmerGenerator kmer_gens[3];
 
-    	for (int i = 0; i < 3; i++) {
-    		string seq = string_seq.substr(i);
-    		seq::NTSequence nts = seq::NTSequence(string_name, string_comment, seq);
-    		seq::AASequence aa = seq::AASequence::translate(nts.begin(), nts.begin() + (nts.size() / 3) * 3);
-    		cout << aa.asString() << endl;
-    		cout << "die 1 " << endl;
-    		kmer_gens.push_back(ProtKmerGenerator(aa.asString(), 15));
-    		cout << "die 2 " << endl;
-    	}
+    	if (string_seq.size() >= 45) {
 
-    	ProtKmer kmer;
-    	// Kmer kmer;
-	    for (int gen = 0; gen < kmer_gens.size(); gen++) {
-	    	while (kmer_gens[gen].hasNext()) {
-	    		kmer = kmer_gens[gen].next();
-	    		cout << "kmer_gens "<< gen <<" ,position = " << kmer_gens[gen].getPosition() <<" kmer = "<< kmer.decodePacked() << endl;
-	    		HashSet<ProtKmer>::iterator iter = kmerSet.find(kmer);
-	    		if (iter != NULL) {
-	    			cout << "we got ";
-	    			cout << "kmer = " << kmer.decodePacked();
-	    			int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
-	    			cout << " nuclPos = " << nucl_pos;
-	    			cout << " nuclKmer = " << string_seq.substr(nucl_pos, 45) << endl;
-	    		}
+	    	for (int i = 0; i < 3; i++) {
+	    		string seq = string_seq.substr(i);
+	    		seq::NTSequence nts = seq::NTSequence(string_name, string_comment, seq);
+	    		seq::AASequence aa = seq::AASequence::translate(nts.begin(), nts.begin() + (nts.size() / 3) * 3);
+	    		cout << aa.asString() << endl;
+	    		kmer_gens.push_back(ProtKmerGenerator(aa.asString(), 15));
 	    	}
-	    }
+
+	    	ProtKmer kmer;
+	    	// Kmer kmer;
+		    for (int gen = 0; gen < kmer_gens.size(); gen++) {
+		    	while (kmer_gens[gen].hasNext()) {
+		    		kmer = kmer_gens[gen].next();
+		    		// cout << "kmer_gens "<< gen <<" ,position = " << kmer_gens[gen].getPosition() <<" kmer = "<< kmer.decodePacked() << endl;
+		    		HashSet<ProtKmer>::iterator iter = kmerSet.find(kmer);
+		    		if (iter != NULL) {
+		    			int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
+		    			printf("we got %s nuclPos = %d nuclKmer = %s\n", kmer.decodePacked().c_str(), nucl_pos, string_seq.substr(nucl_pos, 45).c_str());
+		    		}
+		    	}
+		    }
+		}
     }
 
     kseq_destroy(seq);
