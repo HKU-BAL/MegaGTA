@@ -129,11 +129,6 @@ class Kmer {
 			return true;
 		}
 
-		// const Kmer &operator = (const Kmer &kmer) {
-	 //        memcpy(kmers, kmer.kmers, sizeof(kmers[0]) * 2);
-	 //        return *this;
-	 //    }
-
 		bool operator ==(const Kmer &kmer) const {
 			if (kmers[0] != kmer.kmers[0] || kmers[1] != kmer.kmers[1]) {
 				return false;
