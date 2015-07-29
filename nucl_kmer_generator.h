@@ -1,5 +1,5 @@
-#ifndef PROT_KMER_GENERATOR_H__
-#define PROT_KMER_GENERATOR_H__
+#ifndef NUCL_KMER_GENERATOR_H__
+#define NUCL_KMER_GENERATOR_H__
 
 
 #include <stdint.h>
@@ -7,15 +7,15 @@
 #include <stdexcept>
 #include <ctype.h>
 #include "kmer_1.h"
-#include "prot_kmer.h"
+#include "nucl_kmer.h"
 #include <string.h>
 
 
-class ProtKmerGenerator {
+class NuclKmerGenerator {
 	private:
 		std::string bases_;
 		int k_;
-		ProtKmer next_;
+		NuclKmer next_;
 		bool has_next;
 
 		int index_;
@@ -24,13 +24,13 @@ class ProtKmerGenerator {
 		bool model_only_ = false;
 
 	public:
-		ProtKmerGenerator() {}
+		NuclKmerGenerator() {}
 
-		ProtKmerGenerator(const std::string &seq, int k) : ProtKmerGenerator(seq, k, false) {}
+		NuclKmerGenerator(const std::string &seq, int k) : NuclKmerGenerator(seq, k, false) {}
 
-		ProtKmerGenerator(const std::string &seq, int k, bool model_only) {
-			if (k > Kmer::MAX_PROT_KMER_SIZE) {
-				throw std::invalid_argument("K-mer size cannot be larger than 24");
+		NuclKmerGenerator(const std::string &seq, int k, bool model_only) {
+			if (k > Kmer::MAX_NUCL_KMER_SIZE) {
+				throw std::invalid_argument("K-mer size cannot be larger than 64");
 			}
 
 			if (seq.length() < k) {
@@ -50,8 +50,8 @@ class ProtKmerGenerator {
 			return has_next;
 		}
 
-		ProtKmer next() {
-			ProtKmer ret = next_;
+		NuclKmer next() {
+			NuclKmer ret = next_;
 			cur_model_position_ = position_;
 			findNextKmer(k_ -1);
 			return ret;
@@ -84,7 +84,7 @@ class ProtKmerGenerator {
 
 					if (klength == k_) {
 						cur_model_position_ = position_;
-						next_ = ProtKmer(kmer_str);
+						next_ = NuclKmer(kmer_str);
 						return true;
 					}
 				}
