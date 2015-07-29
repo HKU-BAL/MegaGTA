@@ -16,9 +16,9 @@ AASequence::AASequence(const const_iterator first,
   : std::vector<AminoAcid>(first, last)
 { }
 
-AASequence::AASequence(const std::string name,
-		       const std::string description,
-		       const std::string aSeqString)
+AASequence::AASequence(const std::string &name,
+		       const std::string &description,
+		       const std::string &aSeqString)
   throw (ParseException)
   : std::vector<AminoAcid>(aSeqString.length()),
     name_(name),

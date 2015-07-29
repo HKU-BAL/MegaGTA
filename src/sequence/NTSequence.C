@@ -1,4 +1,5 @@
 #include <fstream>
+#include <algorithm>
 
 #include "NTSequence.h"
 #include "ParseException.h"
@@ -13,8 +14,8 @@ NTSequence::NTSequence(unsigned size)
   : std::vector<Nucleotide>(size)
 { }
 
-NTSequence::NTSequence(const std::string name, const std::string description,
-		       const std::string aSeqString,
+NTSequence::NTSequence(const std::string &name, const std::string &description,
+		       const std::string &aSeqString,
 		       bool sampleAmbiguities)
   throw (ParseException)
   : std::vector<Nucleotide>(aSeqString.length()),
@@ -83,6 +84,13 @@ std::string NTSequence::asString() const
   }
 
   return result;
+}
+
+void NTSequence::selfReverseComplement() {
+  std::reverse(this->begin(), this->end());
+  for (unsigned i = 0; i < size(); ++i) {
+    (*this)[i].selfReverseComplement();
+  }
 }
 
 /// \cond

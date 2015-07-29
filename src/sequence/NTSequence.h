@@ -47,9 +47,9 @@ public:
    *
    * \sa sampleAmbiguities()
    */
-  NTSequence(const std::string name,
-	     const std::string description,
-	     const std::string aSeqString,
+  NTSequence(const std::string &name,
+	     const std::string &description,
+	     const std::string &aSeqString,
 	     bool sampleAmbiguities = false)
     throw (ParseException);
 
@@ -98,7 +98,9 @@ public:
   /**
    * Set the description.
    */
-  void setDescription(std::string description) { description_ = description; }
+  void setDescription(std::string &description) { description_ = description; }
+
+  void selfReverseComplement();
 
 private:
   std::string name_;

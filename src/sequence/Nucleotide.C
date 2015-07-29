@@ -189,7 +189,7 @@ void Nucleotide::nonAmbiguousNucleotides(std::vector<Nucleotide>& result) const
 }
 
 
-std::ostream& operator<< (std::ostream& s, const Nucleotide nt)
+std::ostream& operator<< (std::ostream& s, const Nucleotide &nt)
 {
   return s << nt.toChar();
 }

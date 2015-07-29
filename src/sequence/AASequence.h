@@ -42,9 +42,9 @@ public:
    * string will be interpreted as an AminoAcid using the
    * AminoAcid::AminoAcid(char) constructor.
    */
-  AASequence(const std::string name,
-	     const std::string description,
-	     const std::string aSeqString)
+  AASequence(const std::string &name,
+	     const std::string &description,
+	     const std::string &aSeqString)
     throw (ParseException);
 
   /**
@@ -71,12 +71,12 @@ public:
   /**
    * Set the name.
    */
-  void setName(std::string name) { name_ = name; }
+  void setName(std::string &name) { name_ = name; }
 
   /**
    * Set the description.
    */
-  void setDescription(std::string description) { description_ = description; }
+  void setDescription(std::string &description) { description_ = description; }
 
   /**
    * Translate a nucleotide sequence to an amino acid sequence. The

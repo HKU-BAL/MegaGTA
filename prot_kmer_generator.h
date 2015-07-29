@@ -28,7 +28,8 @@ class ProtKmerGenerator {
 
 		ProtKmerGenerator(const std::string &seq, int k) : ProtKmerGenerator(seq, k, false) {}
 
-		ProtKmerGenerator(const std::string &seq, int k, bool model_only) {
+		ProtKmerGenerator(const std::string &seq, int k, bool model_only):
+			bases_(seq), k_(k), model_only_(model_only), index_(0), position_(1) {
 			if (k > Kmer::MAX_PROT_KMER_SIZE) {
 				throw std::invalid_argument("K-mer size cannot be larger than 24");
 			}
@@ -38,11 +39,6 @@ class ProtKmerGenerator {
 				has_next = false;
 			}
 
-			bases_ = seq;
-			k_ = k;
-			model_only_ = model_only;
-			index_ = 0;
-			position_ = 1;
 			has_next = getFirstKmer(0);
 		}
 

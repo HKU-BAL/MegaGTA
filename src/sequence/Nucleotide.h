@@ -149,7 +149,11 @@ public:
   /**
    * So that you can use it as a key for STL containers.
    */
-  bool operator< (const Nucleotide other) const { return rep_ < other.rep_; }
+  bool operator< (const Nucleotide &other) const { return rep_ < other.rep_; }
+
+  void selfReverseComplement() {
+    if (rep_ <= 3) { rep_ = 3 - rep_; }
+  }
 
 private:
   static const char NT_CHAR[];
@@ -164,7 +168,7 @@ private:
 /**
  * Write the character representation of the nucleotide.
  */
-extern std::ostream& operator<< (std::ostream& o, const Nucleotide nt);
+extern std::ostream& operator<< (std::ostream& o, const Nucleotide &nt);
 
 };
 
