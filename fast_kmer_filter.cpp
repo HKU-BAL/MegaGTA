@@ -104,9 +104,7 @@ int main(int argc, char **argv) {
     	else 
     		string_comment = "";
 
-    	// vector<ProtKmerGenerator> kmer_gens;
     	string rc_string_seq = RevComp(string_seq);
-    	// ProtKmerGenerator kmer_gens[3];
 
     	if (string_seq.size() >= kmer_size) {
     		ProcessSequence(string_seq, string_name, string_comment, kmerSet, kmer_size);
@@ -175,6 +173,7 @@ void ProcessSequence(const string &sequence, const string &name, const string &c
 	    seq::AASequence aa = seq::AASequence::translate(nts.begin(), nts.begin() + (nts.size() / 3) * 3);
 	    // cout << ">" << string_name << endl;
 	    // cout << aa.asString() << endl;
+	    
 	    kmer_gens.push_back(ProtKmerGenerator(aa.asString(), kmer_size/3));
 	}
 
@@ -182,6 +181,8 @@ void ProcessSequence(const string &sequence, const string &name, const string &c
 	for (int gen = 0; gen < kmer_gens.size(); gen++) {
 	  	while (kmer_gens[gen].hasNext()) {
 	   		kmer = kmer_gens[gen].next();
+
+	   		// cout << kmer.decodePacked() << endl;
 
 	   		HashSet<ProtKmer>::iterator iter = kmerSet.find(kmer);
 	   		if (iter != NULL) {
