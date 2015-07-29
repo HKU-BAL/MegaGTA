@@ -1,2 +1,0 @@
-terminate called after throwing an instance of 'std::domain_error'
-  what():  wyv

@@ -5,7 +5,6 @@
 #include <math.h>
 #include <string.h>
 #include <algorithm>
-#include <bitset>
 
 
 class ProtKmer : public Kmer {
