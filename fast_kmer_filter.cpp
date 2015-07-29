@@ -4,6 +4,7 @@
 #include <zlib.h>
 #include "kseq.h"
 #include "prot_kmer_generator.h"
+#include "nucl_kmer.h"
 #include "hash_set.h"
 #include <string.h>
 #include <string>
@@ -50,7 +51,9 @@ struct KmerHelper {
 	}
 
 	uint64_t hash() const {
-		return kmer_.hash();
+		NuclKmer dna_kmer = NuclKmer(nucl_seq_);
+		return dna_kmer.hash();
+		// return kmer_.hash();
 	}
 
 	bool operator ==(const KmerHelper &kmer_helper) const {
