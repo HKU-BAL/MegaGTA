@@ -9,6 +9,7 @@
 #include <vector>
 #include <string.h>
 #include <ctype.h>
+#include <math.h>
 
 using namespace std;
 
@@ -62,72 +63,88 @@ class Parser {
 				string compo, probability;
 				iss3 >> compo;
 				if (compo == "COMPO") {
-					for (int i = 0; i < hmm.alphabet_length; i++) {
+					for (int i = 0; i < hmm.alphabetLength(); i++) {
 						iss3 >> probability;
-						double p = stod(probability);
+						double p = exp(-1 * stod(probability));
 						hmm.compo.push_back(p);
 					}
 				}
 
 				for (int i = 0; i < hmm.NUM_TRANSITIONS + 1; i++) {
-					for (int j = 0; j < hmm.model_length + 1; j++) {
+					for (int j = 0; j < hmm.modelLength() + 1; j++) {
 						hmm.transitions[i].push_back(0.0);
 					}
 				}
 				vector<vector<double>> vector_2d;
 				vector<double> vector_1d;
-				for (int i = 0; i < hmm.model_length + 1; i++) {
+				for (int i = 0; i < hmm.modelLength() + 1; i++) {
 					hmm.emissions.push_back(vector_2d);
-					for (int j = 0; j < hmm.alphabet_length; j++) {
+					for (int j = 0; j < hmm.alphabetLength(); j++) {
 						hmm.emissions[i].push_back(vector_1d);
 						for (int k = 0; k < hmm.NUM_EMISSION_STATES; k++) {
 							hmm.emissions[i][j].push_back(0.0);
 						}
 					}
 				}
-
+				for (int i = 0; i < hmm.modelLength() + 1; i++) {
+					hmm.max_match_emissions.push_back(- numeric_limits<double>::infinity());
+				}
 				//real
 				string line_num;
-				for (int i = 0; i <= hmm.model_length; i++) {			
+				for (int i = 0; i <= hmm.modelLength(); i++) {
 					if (i > 0) {
 						getline (myfile,line);
 						istringstream iss4(line);
 						iss4 >> line_num;
-						for (int j = 0; j < hmm.alphabet_length; j++) {
+						for (int j = 0; j < hmm.alphabetLength(); j++) {
 							iss4 >> probability;
 							double p;
 							if (probability == "*") {
 								p = 0.0;
 							} else {
-								p = stod(probability);
+								p = exp(-1 * stod(probability));
 							}
-							hmm.emissions[i][j][hmm.MSC] = p;
+							if (hmm.normalized == true) {
+								hmm.msc(i, j, log(p/hmm.compo[j]));
+							}
+							else {
+								hmm.msc(i, j, log(p));
+							}
 						}
 					}
 					getline (myfile,line);
 					istringstream iss5(line);
-					for (int j = 0; j < 20; j++) {
+					for (int j = 0; j < hmm.alphabetLength(); j++) {
 						iss5 >> probability;
 						double p;
 						if (probability == "*") {
 							p = 0.0;
 						} else {
-							p = stod(probability);
+							p = exp(-1 * stod(probability));
 						}
-						hmm.emissions[i][j][hmm.ISC] = p;
+						if (hmm.normalized == true) {
+							hmm.isc(i, j, 0);
+						}
+						else {
+							hmm.isc(i, j, log(p));
+						}
 					}
 
 					getline (myfile,line);
 					istringstream iss6(line);
-					for (int j = 0; j < 7; j++) {
+					for (int j = 0; j < hmm.NUM_TRANSITIONS; j++) {
 						iss6 >> probability;
 						double p;
 						if (probability == "*") {
 							p = 0.0;
 						} else {
-							p = stod(probability);
+							p = exp(-1 * stod(probability));
 						}
-						hmm.transitions[j][i] = p;
+						hmm.tsc(i, j, log(p));
+					}
+
+					for (int i = 0; i < hmm.alphabetLength(); i++) {
+						hmm.isc(hmm.modelLength(), i, - numeric_limits<double>::infinity());
 					}
 				}
 				myfile.close();
