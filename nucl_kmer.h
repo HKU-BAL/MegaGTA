@@ -38,6 +38,11 @@ class NuclKmer : public Kmer {
 		virtual void shiftLeft(char c) {
 			Kmer::shiftLeft(charToByte(c));
 		}
+		NuclKmer shiftLeftCopy(uint8_t b) {
+			NuclKmer ret = *this;
+			ret.shiftLeft(b);
+			return ret;
+		}
 		virtual uint8_t charToByte(char c) {
 			return ascii_map[(int)c];
 		}

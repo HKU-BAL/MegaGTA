@@ -11,18 +11,6 @@ int main(int argc, char **argv) {
 	dbg.LoadFromMultiFile(argv[1], false); // false means do not load the multiplicity to save memory
 	printf("kmer_size: %d, graph_size: %lld\n", dbg.kmer_k, (long long)dbg.size);
 
-	// look look all nodes
-	// uint8_t seq[1024];
-	// for (int64_t i = 0; i < dbg.size; ++i) {
-	// 	if (dbg.IsLast(i)) {
-	// 		dbg.Label(i, seq);
-	// 		for (int i = 0; i < dbg.kmer_k; ++i) {
-	// 			printf("%c", "$ACGT"[seq[i]]);
-	// 		}
-	// 		puts("");
-	// 	}
-	// }
-
 	// init dna_map
 	int dna_map[256];
 	memset(dna_map, -1, sizeof(dna_map));
