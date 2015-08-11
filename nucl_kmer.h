@@ -40,7 +40,14 @@ class NuclKmer : public Kmer {
 		}
 		NuclKmer shiftLeftCopy(uint8_t b) {
 			NuclKmer ret = *this;
-			ret.shiftLeft(b);
+			ret.Kmer::shiftLeft(b);
+			return ret;
+		}
+		NuclKmer shiftLeftCopy(uint8_t b1, uint8_t b2, uint8_t b3) {
+			NuclKmer ret = *this;
+			ret.Kmer::shiftLeft(b1);
+			ret.Kmer::shiftLeft(b2);
+			ret.Kmer::shiftLeft(b3);
 			return ret;
 		}
 		virtual uint8_t charToByte(char c) {

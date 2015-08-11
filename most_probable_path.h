@@ -28,7 +28,7 @@ public:
 			most_prob_from_state[2][i] = computeCostInternal('d', i);
 		}
 	};
-	~MostProbablePath();
+	// ~MostProbablePath();
 	double computeHeuristicCost(char state, int state_no) {
 		switch (state) {
 			case 'm':

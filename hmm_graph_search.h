@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include "src/sequence/NTSequence.h"
 #include "src/sequence/AASequence.h"
+#include "node_enumerator.h"
 
 using namespace std;
 
@@ -18,14 +19,13 @@ private:
 	unordered_map<AStarNode, AStarNode> term_nodes;
 
 public:
-	HMMGraphSearch(arguments) {
+	HMMGraphSearch(int pruning) : heuristic_pruning(pruning) {
 		for (int i = 0; i < 3000; i++) {
             exit_probabilities[i] = log(2.0 / (i + 2)) * 2;
         }
 	};
-	~HMMGraphSearch();
+	// ~HMMGraphSearch();
 
-	vector<>
 	double scoreStart(ProfileHMM &hmm, string &starting_kmer, int starting_state) {
 		double ret = 0;
 		for (int i = 1; i <= starting_kmer.size(); i++) {
@@ -33,7 +33,7 @@ public:
 		}
 		return ret;
 	}
-	
+
 	double realScoreStart(ProfileHMM &hmm, string &starting_kmer, int starting_state) {
 		double ret = 0;
 		for (int i = 1; i <= starting_kmer.size(); i++) {

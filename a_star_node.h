@@ -1,3 +1,6 @@
+#ifndef A_STAR_NODE_H__
+#define A_STAR_NODE_H__
+
 #include "nucl_kmer.h"
 
 using namespace std;
@@ -23,7 +26,7 @@ public:
 	double max_score = 0;
 
 	AStarNode() {};
-	AStarNode(AStarNode *discovered_from, NuclKmer &kmer, int &state_no, char &state)
+	AStarNode(AStarNode *discovered_from, NuclKmer &kmer, int state_no, char state)
 	: discovered_from(discovered_from), kmer(kmer), state_no(state_no), state(state) {};
 	// ~AStarNode();
 	bool equals();
@@ -63,3 +66,5 @@ public:
 		return CityHash64((const char*)kmer.kmers, sizeof(kmer.kmers[0]) * 2) + state + state_no;
 	}
 };
+
+#endif
