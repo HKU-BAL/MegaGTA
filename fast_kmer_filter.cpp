@@ -78,9 +78,6 @@ struct KmerHelper {
 
 	uint64_t hash() const {
 		return n_kmer_.hash();
-		// NuclKmer dna_kmer = NuclKmer(nucl_seq_);
-		// return dna_kmer.hash();
-		// return kmer_.hash();
 	}
 
 	bool operator ==(const KmerHelper &kmer_helper) const {
@@ -126,25 +123,6 @@ int main(int argc, char **argv) {
         	// cout << " result: " << result.second << endl;
         }
     }
-
-  //   while (kseq_read(seq2) >= 0) {
-  //   	// printf("%s\n", seq2->seq.s); 	
-  //   	string string_seq(seq2->seq.s);
-  //   	string string_name(seq2->name.s);
-  //   	string string_comment;
-  //   	if (seq2->comment.l) 
-  //   		string_comment = string(seq2->comment.s); 
-  //   	else 
-  //   		string_comment = "";
-
-  //   	string rc_string_seq = RevComp(string_seq);
-
-  //   	if (string_seq.size() >= kmer_size) {
-  //   		ProcessSequence(string_seq, string_name, string_comment, kmerSet, kmer_size);
-  //   		ProcessSequence(rc_string_seq, string_name, string_comment, kmerSet, kmer_size);
-		// }
-  //   }
-  //   return 0;
 
     	//multi-thread version
     int count = 0;
