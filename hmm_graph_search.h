@@ -22,6 +22,7 @@ private:
 	int heuristic_pruning = 20;
 	static double exit_probabilities[3000];
 	HashMap<AStarNode, AStarNode> term_nodes;
+	deque<AStarNode*> created_nodes;
 
 public:
 	HMMGraphSearch(int pruning) : heuristic_pruning(pruning) {
@@ -44,7 +45,10 @@ public:
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, node_enumerator, goal_node);
 		max_seq = "";
 		nucl_seq = "";
+
 		partialResultFromGoal(goal_node, true, max_seq);
+		delectAStarNodes();
+		nucl_seq = starting_kmer + max_seq;
 		cout << "right nucl_seq = "<<nucl_seq <<'\n';
 	}
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
@@ -146,9 +150,14 @@ public:
 		AStarNode inter_goal = starting_node;
 		while (!open.empty()) {
 			// cout << "open size = " <<open.size() << '\n';
+			auto curr_ptr = new AStarNode();
+			auto &curr = *curr_ptr;
 			curr = open.top();
-			cout << curr.kmer.decodePacked() << " " << curr.state_no <<" state = "<< curr.state <<" kmer = " << curr.kmer.decodePacked() <<'\n';
-			cout << "curr discovered_from " << curr.discovered_from->state_no <<'\n';
+
+			created_nodes.push_back(curr_ptr);
+
+			// cout << curr.kmer.decodePacked() << " " << curr.state_no <<" state = "<< curr.state <<" kmer = " << curr.kmer.decodePacked() <<'\n';
+			// cout << "curr discovered_from " << curr.discovered_from->state_no <<'\n';
 			open.pop();
 			HashSet<AStarNode>::iterator iter = closed.find(curr);
 			if (iter != NULL) {
@@ -156,14 +165,12 @@ public:
 			}
 			if (curr.state_no >= hmm.modelLength()) {
 				// cout << curr.state_no << " " << hmm.modelLength() << " \n";
-				cout << "reach the end " << endl;
 				curr.partial = false;
 				if ((curr.real_score + exit_probabilities[curr.length]) / log(2) 
 						> (inter_goal.real_score + exit_probabilities[inter_goal.length]) / log(2)) {
 					inter_goal = curr;
 				}
 				getHighestScoreNode(inter_goal, goal_node);
-				cout << "reach the end " << '\n';
 				return true;
 			}
 
@@ -180,8 +187,8 @@ public:
 				temp_nodes_to_open = node_enumerator.enumeratorNodes(curr, dbg, &got->second);
 			}
 			for (AStarNode &next : temp_nodes_to_open) {
-				cout << "enumeratorNodes = " << next.state_no <<" state = "<< next.state <<" kmer = " << next.kmer.decodePacked() << endl;
-				cout << "next discovered_from " << next.discovered_from->state_no <<'\n';
+				// cout << "enumeratorNodes = " << next.state_no <<" state = "<< next.state <<" kmer = " << next.kmer.decodePacked() << endl;
+				// cout << "next discovered_from " << next.discovered_from->state_no <<'\n';
 				bool open_node = false;
 				if (heuristic_pruning > 0) {
 					if ((next.length < 5 || next.negative_count <= heuristic_pruning) && next.real_score > 0.0) {
@@ -226,7 +233,7 @@ public:
 	}
 
 	void getHighestScoreNode(AStarNode &inter_goal, AStarNode &goal_node) {
-		cout << "inter_goal discovered_from " << inter_goal.discovered_from->state_no <<'\n';
+		// cout << "inter_goal discovered_from " << inter_goal.discovered_from->state_no <<'\n';
 		AStarNode temp_goal = inter_goal;
 		// cout << "temp_goal discovered_from " << temp_goal.discovered_from->state_no <<'\n';
 		goal_node = inter_goal;
@@ -238,6 +245,13 @@ public:
 				goal_node = temp_goal;
 			}
 		}
+	}
+
+	void delectAStarNodes() {
+		for (auto ptr : created_nodes) {
+			delete ptr;
+		}
+		created_nodes.clear();
 	}
 };
 
