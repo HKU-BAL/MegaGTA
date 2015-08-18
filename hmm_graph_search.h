@@ -32,14 +32,14 @@ public:
 	};
 	~HMMGraphSearch() {};
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &node_enumerator, SuccinctDBG &dbg) {
-		// printf("left \n");
-		// int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
+		printf("left \n");
+		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
 		AStarNode goal_node;
-		// astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, node_enumerator, goal_node);
+		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, node_enumerator, goal_node);
 		string max_seq, nucl_seq;
-		// partialResultFromGoal(goal_node, false, max_seq);
-		// nucl_seq = max_seq + starting_kmer;
-		// cout << "left nucl_seq = "<<nucl_seq <<'\n';
+		partialResultFromGoal(goal_node, false, max_seq);
+		nucl_seq = max_seq + starting_kmer;
+		cout << "left nucl_seq = "<<nucl_seq <<'\n';
 
 		printf("right \n");
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, node_enumerator, goal_node);
@@ -108,10 +108,10 @@ public:
 		starting_node.score = scoreStart(hmm, scoring_word, starting_state);
 		starting_node.real_score = realScoreStart(hmm, scoring_word, starting_state);
 
-		return astarSearch(hmm, starting_node, dbg, node_enumerator, goal_node);
+		return astarSearch(hmm, starting_node, dbg, forward, node_enumerator, goal_node);
 	}
 
-	bool astarSearch(ProfileHMM &hmm, AStarNode &starting_node, SuccinctDBG &dbg, NodeEnumerator &node_enumerator, AStarNode &goal_node) {
+	bool astarSearch(ProfileHMM &hmm, AStarNode &starting_node, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, AStarNode &goal_node) {
 		if (starting_node.state_no >= hmm.modelLength()) {
 			goal_node = starting_node;
 			return true;
