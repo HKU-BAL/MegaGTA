@@ -43,6 +43,9 @@ public:
 	};
 	~NodeEnumerator() {};
 	vector<AStarNode> enumeratorNodes(AStarNode &curr, SuccinctDBG &dbg) {
+		return enumeratorNodes(curr, dbg, NULL);
+	}
+	vector<AStarNode> enumeratorNodes(AStarNode &curr, SuccinctDBG &dbg, AStarNode *child_node) {
 		vector<AStarNode> ret;
 		next_state = curr.state_no + 1;
 		switch (curr.state) {
@@ -108,16 +111,16 @@ public:
 	    	set<char> aa;
 	    	for (int i = 0; i < 64; ++i) {
 	    		if (codons[i].size() == 3) {
-	    			cout << curr.kmer.decodePacked() << endl;
+	    			// cout << curr.kmer.decodePacked() << " " << curr.state_no <<'\n';
 	    			next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
-	    			cout << next_kmer.decodePacked() << endl;
+	    			// cout << next_kmer.decodePacked() << " " << next_state << '\n';
 	    			emission = Codon::codonTable[codons[i][0]][codons[i][1]][codons[i][2]];
 	    			if (emission == '*') {
 	    				continue;
 	    			}
 	    			set<char>::iterator it = aa.find(emission);
 	    			aa.insert(emission);
-	    			cout << "emission = " << emission << '\n';
+	    			// cout << "emission = " << emission << '\n';
     				if (it == aa.end()) {
     					next = AStarNode(&curr, next_kmer, next_state, 'm');
 			    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
@@ -127,6 +130,9 @@ public:
 			    		} else {
 			    			next.max_score = curr.max_score;
 			    			next.negative_count = curr.negative_count + 1;
+			    		}
+			    		for (int j = 0; j < 3; j++) {
+			    			next.nucl_emission[j] = "acgt"[codons[i][j]];
 			    		}
 			    		next.emission = emission;
 			    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
@@ -143,6 +149,9 @@ public:
 				    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
 				    		next.max_score = curr.max_score;
 				    		next.negative_count = curr.negative_count + 1;
+				    		for (int j = 0; j < 3; j++) {
+				    			next.nucl_emission[j] = "acgt"[codons[i][j]];
+				    		}
 				    		next.emission = emission;
 				    		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
 				    		next.length = curr.length + 1;
@@ -162,6 +171,9 @@ public:
 	    		next.real_score = curr.real_score + del_trans;
 	    		next.max_score = curr.max_score;
 	    		next.negative_count = curr.negative_count + 1;
+	    		for (int j = 0; j < 3; j++) {
+	    			next.nucl_emission[j] = '-';
+	    		}
 	    		next.emission = '-';
 	    		next.this_node_score = del_trans - max_match_emission;
 	    		next.length = curr.length;
@@ -171,62 +183,6 @@ public:
 
 	    		ret.push_back(next);
 	    	}
-	    	
-
-	    	// for (int i = 0; i < outd; ++i) {
-	    	// 	next_kmer = curr.kmer.shiftLeftCopy(dbg.GetNodeLastChar(next_node[i]));
-	    	// 	emission = "$ACGT"[dbg.GetNodeLastChar(next_node[i])];
-
-	    	// 	//match node
-	    	// 	next = AStarNode(&curr, next_kmer, next_state, 'm');
-	    	// 	next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
-	    	// 	if (next.real_score >= curr.max_score) {
-	    	// 		next.max_score = next.real_score;
-	    	// 		next.negative_count = 0;
-	    	// 	} else {
-	    	// 		next.max_score = curr.max_score;
-	    	// 		next.negative_count = curr.negative_count + 1;
-	    	// 	}
-	    	// 	next.emission = emission;
-	    	// 	next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
-	    	// 	next.length = curr.length + 1;
-	    	// 	next.score = curr.score + next.this_node_score;
-	    	// 	next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('m', next_state)));
-	    	// 	next.indels = curr.indels;
-
-	    	// 	ret.push_back(next);
-
-	    	// 	//insert node
-	    	// 	if (curr.state != 'd') {
-	    	// 		next = AStarNode(&curr, next_kmer, curr.state_no, 'i');
-		    // 		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
-		    // 		next.max_score = curr.max_score;
-		    // 		next.negative_count = curr.negative_count + 1;
-		    // 		next.emission = emission;
-		    // 		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
-		    // 		next.length = curr.length + 1;
-		    // 		next.score = curr.score + next.this_node_score;
-		    // 		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('i', curr.state_no)));
-		    // 		next.indels = curr.indels + 1;
-
-		    // 		ret.push_back(next);
-	    	// 	}
-	    	// }
-	    	// //delete node
-	    	// if (curr.state != 'i') {
-	    	// 	next = AStarNode(&curr, curr.kmer, next_state, 'd');
-	    	// 	next.real_score = curr.real_score + del_trans;
-	    	// 	next.max_score = curr.max_score;
-	    	// 	next.negative_count = curr.negative_count + 1;
-	    	// 	next.emission = '-';
-	    	// 	next.this_node_score = del_trans - max_match_emission;
-	    	// 	next.length = curr.length;
-	    	// 	next.score = curr.score + next.this_node_score;
-	    	// 	next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('d', next_state)));
-	    	// 	next.indels = curr.indels + 1;
-
-	    	// 	ret.push_back(next);
-	    	// }
 	    }
 	    return ret;
 	}

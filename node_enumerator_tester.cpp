@@ -18,14 +18,14 @@ int main(int argc, char **argv) {
 	Parser::readHMM(hmm_file, hmm);
 	MostProbablePath hcost = MostProbablePath(hmm);
 	NodeEnumerator node_enumerator = NodeEnumerator(hmm, hcost);
-	string kmer = "cggaagcgcaagacctcggaccgtttcatcgtcacccgtcgtaag";
-	// string kmer = "cgtaataaaaaagctaaatcagacaaacttatcgttcgtcgtcgt";
+	// string kmer = "cggaagcgcaagacctcggaccgtttcatcgtcacccgtcgtaag";
+	string kmer = "cgtaataaaaaagctaaatcagacaaacttatcgttcgtcgtcgt";
 	NuclKmer nucl_kmer = NuclKmer(kmer);
 	AStarNode curr = AStarNode(NULL, nucl_kmer, 17, 'm');
 	vector<AStarNode> result = node_enumerator.enumeratorNodes(curr, dbg);
 	cout << "result size = " << result.size() << '\n';
 	for (int i = 0; i < result.size(); i++) {
-		cout << result[i].state << " "<<result[i].kmer.decodePacked() << '\n';
+		cout << result[i].state << " "<<result[i].kmer.decodePacked() << " " <<result[i].emission <<'\n';
 	}
 
 	return 0;

@@ -11,7 +11,7 @@ public:
 	bool partial = true;
 	AStarNode *discovered_from;
 	NuclKmer kmer;
-	// long fwd_hash, rc_hash;
+	char nucl_emission[3];
 	double score;
 	char state;
 	int state_no;
@@ -29,8 +29,7 @@ public:
 	AStarNode(AStarNode *discovered_from, NuclKmer &kmer, int state_no, char state)
 	: discovered_from(discovered_from), kmer(kmer), state_no(state_no), state(state) {};
 	// ~AStarNode();
-	bool equals();
-	bool operator< (const AStarNode &node2) {
+	bool operator< (const AStarNode &node2) const {
 		if (fval < node2.fval) {
 			return true;
 		}
@@ -61,6 +60,26 @@ public:
 			}
 		}
 	}
+	bool operator== (const AStarNode &node2) const {
+		if (!(kmer == node2.kmer)) {
+			return false;
+		}
+		if (state != node2.state) {
+			return false;
+		}
+		if (state_no != node2.state_no) {
+			return false;
+		}
+		return true;
+	}
+	
+	// AStarNode& operator= (const AStarNode *node2) {
+	// 	kmer = node2->kmer;
+	// 	state = node2->state;
+	// 	state_no = node2->state_no;
+	// 	discovered_from = node2->discovered_from;
+	// 	return *this;
+	// }
 
 	uint64_t hash() const {
 		return CityHash64((const char*)kmer.kmers, sizeof(kmer.kmers[0]) * 2) + state + state_no;
