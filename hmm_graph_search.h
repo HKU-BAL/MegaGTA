@@ -31,34 +31,28 @@ public:
         }
 	};
 	~HMMGraphSearch() {};
-	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &node_enumerator, SuccinctDBG &dbg) {
+	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg) {
+		AStarNode goal_node;
+		string right_max_seq, right_nucl_seq, left_max_seq, left_nucl_seq;
+		printf("right \n");
+		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node);
+		partialResultFromGoal(goal_node, true, right_max_seq);	
+		right_nucl_seq = starting_kmer + right_max_seq;
+		cout << "right nucl_seq = "<<right_nucl_seq << '\n';
+
 		printf("left \n");
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
-		AStarNode goal_node;
-		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, node_enumerator, goal_node);
-		string max_seq, nucl_seq;
-		partialResultFromGoal(goal_node, false, max_seq);
-		nucl_seq = max_seq + starting_kmer;
-		cout << "left nucl_seq = "<<nucl_seq <<'\n';
-
-		printf("right \n");
-		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, node_enumerator, goal_node);
-		max_seq = "";
-		nucl_seq = "";
-
-		partialResultFromGoal(goal_node, true, max_seq);
+		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node);
+		partialResultFromGoal(goal_node, false, left_max_seq);
 		delectAStarNodes();
-		nucl_seq = starting_kmer + max_seq;
-		cout << "right nucl_seq = "<<nucl_seq <<'\n';
+		RevComp(left_max_seq);
+		left_nucl_seq = left_max_seq + starting_kmer;
+		cout << "left nucl_seq = "<<left_nucl_seq <<'\n';
 	}
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
 		while (goal.discovered_from != NULL) {
 			if (goal.state != 'd') {
-				if (forward) {
-					max_seq = goal.nucl_emission + max_seq;
-				} else {
-					max_seq = max_seq + goal.nucl_emission;
-				}
+				max_seq = goal.nucl_emission + max_seq;
 			}
 			goal = *goal.discovered_from;
 		}		
@@ -95,7 +89,14 @@ public:
 	    	seq::AASequence aa = seq::AASequence::translate(nts.begin(), nts.begin() + (nts.size() / 3) * 3);
 			scoring_word = aa.asString();
 		}
-		NuclKmer kmer = NuclKmer(framed_word);
+		NuclKmer kmer;
+		if (!forward) {
+			string rc_frame_word = framed_word;
+			RevComp(rc_frame_word);
+			kmer = NuclKmer(rc_frame_word);
+		} else {
+			kmer = NuclKmer(framed_word);
+		}
 		AStarNode starting_node;
 		if (hmm.getAlphabet() == ProfileHMM::protein) {
 			starting_node = AStarNode(NULL, kmer, starting_state + (framed_word.size() / 3), 'm');
@@ -130,15 +131,11 @@ public:
 		//need to add a cache here
 		HashMap<AStarNode, AStarNode>::iterator got = term_nodes.find(starting_node);
 		if (got == term_nodes.end()) {
-			for (AStarNode next : node_enumerator.enumeratorNodes(starting_node, dbg)) {
-				// cout << "enumeratorNodes = " << next.state_no<< '\n';
-				// cout << "inter_goal discovered_from " << next.discovered_from->state_no <<'\n';
+			for (AStarNode next : node_enumerator.enumeratorNodes(starting_node, forward, dbg)) {
 				open.push(next);
 			}
 		} else {
-			for (AStarNode next : node_enumerator.enumeratorNodes(starting_node, dbg, &got->second)) {
-				// cout << "enumeratorNodes = " << next.state_no<< '\n';
-				// cout << "inter_goal discovered_from " << next.discovered_from->state_no <<'\n';
+			for (AStarNode next : node_enumerator.enumeratorNodes(starting_node, forward, dbg, &got->second)) {
 				open.push(next);
 			}
 		}
@@ -155,9 +152,6 @@ public:
 			curr = open.top();
 
 			created_nodes.push_back(curr_ptr);
-
-			// cout << curr.kmer.decodePacked() << " " << curr.state_no <<" state = "<< curr.state <<" kmer = " << curr.kmer.decodePacked() <<'\n';
-			// cout << "curr discovered_from " << curr.discovered_from->state_no <<'\n';
 			open.pop();
 			HashSet<AStarNode>::iterator iter = closed.find(curr);
 			if (iter != NULL) {
@@ -182,13 +176,11 @@ public:
 			vector<AStarNode> temp_nodes_to_open;
 			got = term_nodes.find(curr);
 			if (got == term_nodes.end()) {
-				temp_nodes_to_open = node_enumerator.enumeratorNodes(curr, dbg);
+				temp_nodes_to_open = node_enumerator.enumeratorNodes(curr, forward, dbg);
 			} else {
-				temp_nodes_to_open = node_enumerator.enumeratorNodes(curr, dbg, &got->second);
+				temp_nodes_to_open = node_enumerator.enumeratorNodes(curr, forward, dbg, &got->second);
 			}
 			for (AStarNode &next : temp_nodes_to_open) {
-				// cout << "enumeratorNodes = " << next.state_no <<" state = "<< next.state <<" kmer = " << next.kmer.decodePacked() << endl;
-				// cout << "next discovered_from " << next.discovered_from->state_no <<'\n';
 				bool open_node = false;
 				if (heuristic_pruning > 0) {
 					if ((next.length < 5 || next.negative_count <= heuristic_pruning) && next.real_score > 0.0) {
@@ -233,13 +225,9 @@ public:
 	}
 
 	void getHighestScoreNode(AStarNode &inter_goal, AStarNode &goal_node) {
-		// cout << "inter_goal discovered_from " << inter_goal.discovered_from->state_no <<'\n';
 		AStarNode temp_goal = inter_goal;
-		// cout << "temp_goal discovered_from " << temp_goal.discovered_from->state_no <<'\n';
 		goal_node = inter_goal;
 		while (temp_goal.discovered_from != NULL) {
-			// cout << "curr " << temp_goal.state_no<< '\n';
-			// cout << "discovered_from " << temp_goal.discovered_from->state_no << " state = " << temp_goal.discovered_from->state<< '\n';
 			temp_goal = *temp_goal.discovered_from;
 			if (temp_goal.real_score > goal_node.real_score) {
 				goal_node = temp_goal;
@@ -252,6 +240,28 @@ public:
 			delete ptr;
 		}
 		created_nodes.clear();
+	}
+	char Comp(char c) {
+		switch (c) {
+			case 'A':
+			case 'a': return 't';
+			case 'C':
+			case 'c': return 'g';
+			case 'G':
+			case 'g': return 'c';
+			case 'T':
+			case 't': return 'a';
+			case 'N':
+			case 'n': return 'n';
+			default: assert(false);
+		}
+	}
+
+	void RevComp(string &s) {
+		reverse(s.begin(), s.end());
+		for (unsigned i = 0; i < s.length(); ++i) {
+			s[i] = Comp(s[i]);
+		}
 	}
 };
 

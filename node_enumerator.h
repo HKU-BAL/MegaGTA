@@ -42,10 +42,14 @@ public:
 		}
 	};
 	~NodeEnumerator() {};
-	vector<AStarNode> enumeratorNodes(AStarNode &curr, SuccinctDBG &dbg) {
-		return enumeratorNodes(curr, dbg, NULL);
+	vector<AStarNode> enumeratorNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg) {
+		return enumeratorNodes(curr, forward, dbg, NULL);
 	}
-	vector<AStarNode> enumeratorNodes(AStarNode &curr, SuccinctDBG &dbg, AStarNode *child_node) {
+	vector<AStarNode> enumeratorNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg, AStarNode *child_node) {
+		//test
+		// if (!forward) {
+		// 	cout << "RC = "<<curr.kmer.decodePacked() << '\n';
+		// }
 		vector<AStarNode> ret;
 		next_state = curr.state_no + 1;
 		switch (curr.state) {
@@ -114,7 +118,11 @@ public:
 	    			// cout << curr.kmer.decodePacked() << " " << curr.state_no <<'\n';
 	    			next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
 	    			// cout << next_kmer.decodePacked() << " " << next_state << '\n';
-	    			emission = Codon::codonTable[codons[i][0]][codons[i][1]][codons[i][2]];
+	    			if (!forward) {
+	    				emission = Codon::rc_codonTable[codons[i][0]][codons[i][1]][codons[i][2]];
+	    			} else {
+	    				emission = Codon::codonTable[codons[i][0]][codons[i][1]][codons[i][2]];
+	    			}
 	    			if (emission == '*') {
 	    				continue;
 	    			}

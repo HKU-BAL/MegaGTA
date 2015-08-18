@@ -89,4 +89,90 @@ public:
     }
   } };
 
+  constexpr static char rc_codonTable[4][4][4] = {
+  { { 'F' /* AAA = TTT*/,
+      'V' /* AAC = GTT*/,
+      'L' /* AAG = CTT*/,
+      'I' /* AAT = ATT*/
+    },
+    { 'C' /* ACA = TGT*/,
+      'G' /* ACC = GGT*/,
+      'R' /* ACG = CGT*/,
+      'S' /* ACT = AGT*/
+    },
+    { 'S' /* AGA = TCT*/,
+      'A' /* AGC = GCT*/,
+      'P' /* AGG = CCT*/,
+      'T' /* AGT = ACT*/
+    },
+    { 'Y' /* ATA = TAT*/,
+      'D' /* ATC = GAT*/,
+      'H' /* ATG = CAT*/,
+      'N' /* ATT = AAT*/
+    }
+  },
+  { { 'L' /* CAA = TTG*/,
+      'V' /* CAC = GTG*/,
+      'L' /* CAG = CTG*/,
+      'M' /* CAT = ATG*/
+    },
+    { 'W' /* CCA = TGG*/,
+      'G' /* CCC = GGG*/,
+      'R' /* CCG = CGG*/,
+      'R' /* CCT = AGG*/
+    },
+    { 'S' /* CGA = TCG*/,
+      'A' /* CGC = GCG*/,
+      'P' /* CGG = CCG*/,
+      'T' /* CGT = ACG*/
+    },
+    { '*' /* CTA = TAG*/,
+      'E' /* CTC = GAG*/,
+      'Q' /* CTG = CAG*/,
+      'K' /* CTT = AAG*/
+    }
+  },
+  { { 'F' /* GAA = TTC*/,
+      'V' /* GAC = GTC*/,
+      'L' /* GAG = CTC*/,
+      'I' /* GAT = ATC*/
+    },
+    { 'C' /* GCA = TGC*/,
+      'G' /* GCC = GGC*/,
+      'R' /* GCG = CGC*/,
+      'S' /* GCT = AGC*/
+    },
+    { 'S' /* GGA = TCC*/,
+      'A' /* GGC = GCC*/,
+      'P' /* GGG = CCC*/,
+      'T' /* GGT = ACC*/
+    },
+    { 'Y' /* GTA = TAC*/,
+      'D' /* GTC = GAC*/,
+      'H' /* GTG = CAC*/,
+      'N' /* GTT = AAC*/
+    }
+  },
+  { { 'L' /* TAA = TTA*/,
+      'V' /* TAC = GTA*/,
+      'L' /* TAG = CTA*/,
+      'I' /* TAT = ATA*/
+    },
+    { '*' /* TCA = TGA*/,
+      'G' /* TCC = GGA*/,
+      'R' /* TCG = CGA*/,
+      'R' /* TCT = AGA*/
+    },
+    { 'S' /* TGA = TCA*/,
+      'A' /* TGC = GCA*/,
+      'P' /* TGG = CCA*/,
+      'T' /* TGT = ACA*/
+    },
+    { '*' /* TTA = TAA*/,
+      'E' /* TTC = GAA*/,
+      'Q' /* TTG = CAA*/,
+      'K' /* TTT = AAA*/
+    }
+  } };
+
 };
