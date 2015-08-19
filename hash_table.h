@@ -256,7 +256,7 @@ public:
         clear();
         rehash(hash_table.buckets_.size());
 
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)hash_table.buckets_.size(); ++i)
         {
             node_type *prev = NULL;
@@ -433,7 +433,7 @@ public:
     size_type remove_if(const Predicator &predicator)
     {
         uint64_t num_removed_nodes = 0;
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t index = 0; index < (int64_t)buckets_.size(); ++index)
         {
             lock_bucket(index);
@@ -474,7 +474,7 @@ public:
     template <typename UnaryProc>
     UnaryProc &for_each(UnaryProc &op)
     {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             for (node_type *node = buckets_[i]; node; node = node->next)
@@ -486,7 +486,7 @@ public:
     template <typename UnaryProc>
     UnaryProc &for_each(UnaryProc &op) const
     {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             for (node_type *node = buckets_[i]; node; node = node->next)
@@ -542,7 +542,7 @@ public:
     void clear()
     {
         size_ = 0;
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             node_type *node = buckets_[i];
@@ -592,7 +592,7 @@ private:
 
         if (new_num_buckets > old_buckets.size())
         {
-#pragma omp parallel for
+// #pragma omp parallel for
             for (int64_t i = 0; i < (int64_t)old_buckets.size(); ++i)
             {
                 node_type *node = old_buckets[i];
@@ -608,7 +608,7 @@ private:
         }
         else
         {
-//#pragma omp parallel for
+//// #pragma omp parallel for
             for (int64_t i = 0; i < (int64_t)old_buckets.size(); ++i)
             {
                 node_type *node = old_buckets[i];

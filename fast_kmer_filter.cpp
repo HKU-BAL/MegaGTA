@@ -59,33 +59,6 @@ struct Sequence {
 	}
 };
 
-// struct KmerHelper {
-// 	ProtKmer kmer_;
-// 	NuclKmer n_kmer_;
-// 	int frame_;
-// 	int position_;
-
-// 	KmerHelper() {}
-
-// 	KmerHelper(const ProtKmer &kmer, const string &nucl_seq, const int &frame, const int &position) {
-// 		kmer_ = kmer;
-// 		n_kmer_ = NuclKmer(nucl_seq);
-// 		frame_ = frame;
-// 		position_ = position;
-// 	}
-
-// 	uint64_t hash() const {
-// 		return n_kmer_.hash();
-// 	}
-
-// 	bool operator ==(const KmerHelper &kmer_helper) const {
-// 		if (kmer_.kmers[0] != kmer_helper.kmer_.kmers[0] || kmer_.kmers[1] != kmer_helper.kmer_.kmers[1]) {
-// 			return false;
-// 		}
-// 		return true;
-// 	}
-// };
-
 void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size);
 void ProcessSequence(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size);
 char Comp(char c);
@@ -157,13 +130,6 @@ int main(int argc, char **argv) {
 	    }
 	    // timer.stop();
     }
-
-    // cerr << "multi-process time: " << timer.elapsed() << endl;
-
-    // for (HashSet<KmerHelper>::iterator i = starting_kmers.begin(); i != starting_kmers.end() ; i++) {
-    // 	cout << "rplB\t" << "SRR172903.7702200\t" << "357259128\t";
-    // 	printf("%s\ttrue\t%d\t%s\t%d\n", /*i->nucl_seq_.c_str()*/ "haha", i->frame_, i->kmer_.decodePacked().c_str(), i->position_);
-    // }
 
     kseq_destroy(seq);
     gzclose(fp);

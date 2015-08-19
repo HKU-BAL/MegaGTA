@@ -21,8 +21,11 @@ class HMMGraphSearch
 private:
 	int heuristic_pruning = 20;
 	static double exit_probabilities[3000];
+
 	HashMap<AStarNode, AStarNode> term_nodes;
 	deque<AStarNode*> created_nodes;
+	HashSet<AStarNode> closed;
+	HashMap<AStarNode, AStarNode> open_hash;
 
 public:
 	HMMGraphSearch(int pruning) : heuristic_pruning(pruning) {
@@ -118,11 +121,11 @@ public:
 			return true;
 		}
 		priority_queue<AStarNode, vector<AStarNode>> open;
-		HashSet<AStarNode> closed;
+		closed.clear();
+		open_hash.clear();
+		
 		AStarNode curr;
 		int opened_nodes = 1;
-
-		HashMap<AStarNode, AStarNode> open_hash;
 
 		int repeated_nodes = 0;
 		int replaced_nodes = 0;
@@ -225,6 +228,7 @@ public:
 	}
 
 	void getHighestScoreNode(AStarNode &inter_goal, AStarNode &goal_node) {
+		// cout << "inter_goal discovered_from " << inter_goal.discovered_from->state_no <<'\n';
 		AStarNode temp_goal = inter_goal;
 		goal_node = inter_goal;
 		while (temp_goal.discovered_from != NULL) {

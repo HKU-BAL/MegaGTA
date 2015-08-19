@@ -76,7 +76,7 @@ class SuccinctDBG {
             rank_f_[i] = rs_last_.Rank(f_[i] - 1);
         }
 
-        #pragma omp parallel for
+        // #pragma omp parallel for
 
         for (int64_t i = 0; i < size; ++i) {
             if (GetW(i) == 0) {
