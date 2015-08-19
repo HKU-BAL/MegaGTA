@@ -9,16 +9,13 @@
 #include <string.h>
 #include <string>
 #include <vector>
-#include <iostream>
+#include <algorithm>
 #include "src/sequence/NTSequence.h"
 #include "src/sequence/AASequence.h"
 
 #include <time.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-
-//test
-#include <bitset>
 
 #ifndef KSEQ_INITED
 #define KSEQ_INITED
@@ -147,7 +144,6 @@ void ProcessSequenceMulti(const string &sequence, const string &name, const stri
     		kmer = kmer_gens[gen].next();
     		HashSet<ProtKmer>::iterator iter = kmerSet.find(kmer);
     		if (iter != NULL) {
-    			// cout << kmer.decodePacked() << endl;
     			int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
 
     			// printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), gen + 1, kmer.decodePacked().c_str(), kmer_gens[gen].getPosition());

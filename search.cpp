@@ -21,7 +21,6 @@ int main(int argc, char **argv) {
 	int heuristic_pruning = 20;
 	NuclKmer::setUp();
 	HMMGraphSearch::setUp();
-	// HMMGraphSearch search = HMMGraphSearch(heuristic_pruning);
 	SuccinctDBG dbg;
 	dbg.LoadFromMultiFile(argv[1], false);
 	ifstream hmm_file (argv[2]);
@@ -31,9 +30,7 @@ int main(int argc, char **argv) {
 	ProfileHMM reverse_hmm = ProfileHMM(true);
 	Parser::readHMM(hmm_file_2, reverse_hmm);
 	MostProbablePath for_hcost = MostProbablePath(forward_hmm);
-	// NodeEnumerator for_node_enumerator = NodeEnumerator(forward_hmm, for_hcost);
 	MostProbablePath rev_hcost = MostProbablePath(reverse_hmm);
-	// NodeEnumerator rev_node_enumerator = NodeEnumerator(reverse_hmm, rev_hcost);
 
 	pair<string, int> starting_kmer;
 	vector<pair<string, int>> starting_kmer_storage;

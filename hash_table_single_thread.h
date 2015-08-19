@@ -2,13 +2,14 @@
  * @file hash_table.h
  * @brief HashTable Class.
  * @author Yu Peng (ypeng@cs.hku.hk)
+ * @modified by Huang Yukun, disable openmp parallel
  * @version 1.0.0
  * @date 2011-08-03
  */
 
-#ifndef __CONTAINER_HASH_TABLE_H_
+#ifndef __SINGLETHREAD_CONTAINER_HASH_TABLE_H_
 
-#define __CONTAINER_HASH_TABLE_H_
+#define __SINGLETHREAD_CONTAINER_HASH_TABLE_H_
 
 #include <omp.h>
 #include <stdint.h>
@@ -256,7 +257,7 @@ public:
         clear();
         rehash(hash_table.buckets_.size());
 
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)hash_table.buckets_.size(); ++i)
         {
             node_type *prev = NULL;
@@ -433,7 +434,7 @@ public:
     size_type remove_if(const Predicator &predicator)
     {
         uint64_t num_removed_nodes = 0;
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t index = 0; index < (int64_t)buckets_.size(); ++index)
         {
             lock_bucket(index);
@@ -474,7 +475,7 @@ public:
     template <typename UnaryProc>
     UnaryProc &for_each(UnaryProc &op)
     {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             for (node_type *node = buckets_[i]; node; node = node->next)
@@ -486,7 +487,7 @@ public:
     template <typename UnaryProc>
     UnaryProc &for_each(UnaryProc &op) const
     {
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             for (node_type *node = buckets_[i]; node; node = node->next)
@@ -542,7 +543,7 @@ public:
     void clear()
     {
         size_ = 0;
-#pragma omp parallel for
+// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             node_type *node = buckets_[i];
@@ -592,7 +593,7 @@ private:
 
         if (new_num_buckets > old_buckets.size())
         {
-#pragma omp parallel for
+// #pragma omp parallel for
             for (int64_t i = 0; i < (int64_t)old_buckets.size(); ++i)
             {
                 node_type *node = old_buckets[i];
@@ -608,7 +609,7 @@ private:
         }
         else
         {
-//#pragma omp parallel for
+//// #pragma omp parallel for
             for (int64_t i = 0; i < (int64_t)old_buckets.size(); ++i)
             {
                 node_type *node = old_buckets[i];

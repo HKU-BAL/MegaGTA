@@ -5,8 +5,8 @@
 #include "succinct_dbg.h"
 #include "nucl_kmer.h"
 #include <vector>
-#include "hash_set.h"
-#include "hash_map.h"
+#include "hash_set_single_thread.h"
+#include "hash_map_single_thread.h"
 #include <math.h>
 #include <queue>
 #include "src/sequence/NTSequence.h"
@@ -36,23 +36,19 @@ public:
         }
 	}
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg) {
+		//right, forward search
 		AStarNode goal_node;
 		string right_max_seq, left_max_seq;
-		// printf("right \n");
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node);
 		partialResultFromGoal(goal_node, true, right_max_seq);	
-		// right_nucl_seq = starting_kmer + right_max_seq;
-		// cout << "right nucl_seq = "<<right_nucl_seq << '\n';
 
-		// printf("left \n");
+		//left, reverse search
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
 		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node);
 		partialResultFromGoal(goal_node, false, left_max_seq);
 		delectAStarNodes();
 		RevComp(left_max_seq);
-		// left_nucl_seq = left_max_seq + starting_kmer;
 		printf(">rplB\n%s%s%s\n", left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
-		// cout << "left nucl_seq = "<<left_nucl_seq <<'\n';
 	}
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
 		while (goal.discovered_from != NULL) {
