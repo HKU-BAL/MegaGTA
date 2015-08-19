@@ -9,7 +9,8 @@ using namespace std;
 
 int main(int argc, char **argv) {
 	NuclKmer::setUp();
-	HMMGraphSearch search = HMMGraphSearch(20);
+	int pruning = 20;
+	HMMGraphSearch search = HMMGraphSearch(pruning);
 	SuccinctDBG dbg;
 	dbg.LoadFromMultiFile(argv[1], false);
 	ifstream hmm_file (argv[2]);

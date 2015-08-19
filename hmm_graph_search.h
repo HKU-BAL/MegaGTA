@@ -28,29 +28,31 @@ private:
 	HashMap<AStarNode, AStarNode> open_hash;
 
 public:
-	HMMGraphSearch(int pruning) : heuristic_pruning(pruning) {
+	HMMGraphSearch(int &pruning) : heuristic_pruning(pruning) {};
+	~HMMGraphSearch() {};
+	static void setUp() {
 		for (int i = 0; i < 3000; i++) {
             exit_probabilities[i] = log(2.0 / (i + 2)) * 2;
         }
-	};
-	~HMMGraphSearch() {};
+	}
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg) {
 		AStarNode goal_node;
-		string right_max_seq, right_nucl_seq, left_max_seq, left_nucl_seq;
-		printf("right \n");
+		string right_max_seq, left_max_seq;
+		// printf("right \n");
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node);
 		partialResultFromGoal(goal_node, true, right_max_seq);	
-		right_nucl_seq = starting_kmer + right_max_seq;
-		cout << "right nucl_seq = "<<right_nucl_seq << '\n';
+		// right_nucl_seq = starting_kmer + right_max_seq;
+		// cout << "right nucl_seq = "<<right_nucl_seq << '\n';
 
-		printf("left \n");
+		// printf("left \n");
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
 		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node);
 		partialResultFromGoal(goal_node, false, left_max_seq);
 		delectAStarNodes();
 		RevComp(left_max_seq);
-		left_nucl_seq = left_max_seq + starting_kmer;
-		cout << "left nucl_seq = "<<left_nucl_seq <<'\n';
+		// left_nucl_seq = left_max_seq + starting_kmer;
+		printf(">rplB\n%s%s%s\n", left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
+		// cout << "left nucl_seq = "<<left_nucl_seq <<'\n';
 	}
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
 		while (goal.discovered_from != NULL) {
