@@ -59,36 +59,34 @@ struct Sequence {
 	}
 };
 
-struct KmerHelper {
-	ProtKmer kmer_;
-	// string nucl_seq_;
-	NuclKmer n_kmer_;
-	int frame_;
-	int position_;
+// struct KmerHelper {
+// 	ProtKmer kmer_;
+// 	NuclKmer n_kmer_;
+// 	int frame_;
+// 	int position_;
 
-	KmerHelper() {}
+// 	KmerHelper() {}
 
-	KmerHelper(const ProtKmer &kmer, const string &nucl_seq, const int &frame, const int &position) {
-		kmer_ = kmer;
-		// nucl_seq_ = nucl_seq;
-		n_kmer_ = NuclKmer(nucl_seq);
-		frame_ = frame;
-		position_ = position;
-	}
+// 	KmerHelper(const ProtKmer &kmer, const string &nucl_seq, const int &frame, const int &position) {
+// 		kmer_ = kmer;
+// 		n_kmer_ = NuclKmer(nucl_seq);
+// 		frame_ = frame;
+// 		position_ = position;
+// 	}
 
-	uint64_t hash() const {
-		return n_kmer_.hash();
-	}
+// 	uint64_t hash() const {
+// 		return n_kmer_.hash();
+// 	}
 
-	bool operator ==(const KmerHelper &kmer_helper) const {
-		if (kmer_.kmers[0] != kmer_helper.kmer_.kmers[0] || kmer_.kmers[1] != kmer_helper.kmer_.kmers[1]) {
-			return false;
-		}
-		return true;
-	}
-};
+// 	bool operator ==(const KmerHelper &kmer_helper) const {
+// 		if (kmer_.kmers[0] != kmer_helper.kmer_.kmers[0] || kmer_.kmers[1] != kmer_helper.kmer_.kmers[1]) {
+// 			return false;
+// 		}
+// 		return true;
+// 	}
+// };
 
-void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size, HashSet<KmerHelper> &starting_kmers);
+void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size);
 void ProcessSequence(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size);
 char Comp(char c);
 void RevComp(string &s);
@@ -112,22 +110,18 @@ int main(int argc, char **argv) {
     int batch_size = 1 * 1024 * 1024;
 
     HashSet<ProtKmer> kmerSet;
-
+    //add kmers from reference to hash set
     while (kseq_read(seq) >= 0) { 
-        // printf("%s\n", seq->seq.s);
-        ProtKmerGenerator kmers = ProtKmerGenerator(seq->seq.s, kmer_size/3, true); // kmer = 45
+        ProtKmerGenerator kmers = ProtKmerGenerator(seq->seq.s, kmer_size/3, true);
         while (kmers.hasNext()) {
         	ProtKmer temp = kmers.next();
-        	// cout << "seeds = " << temp.decodePacked();
+        	temp.model_position = kmers.getPosition();
         	kmerSet.insert(temp);
-        	// cout << " result: " << result.second << endl;
         }
     }
 
-    	//multi-thread version
     int count = 0;
     vector<Sequence> sequence_storage;
-    HashSet<KmerHelper> starting_kmers;
 	// xtimer_t timer;
 	// timer.reset();
     while (kseq_read(seq2) >= 0) {
@@ -139,9 +133,9 @@ int main(int argc, char **argv) {
 	    	for (int i = 0; i < batch_size; i++) {
 	    	// vector<ProtKmerGenerator> kmer_gens;
 			   	if (sequence_storage[i].sequence_.size() >= kmer_size) {
-			   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size, starting_kmers);
+			   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size);
 			   		RevComp(sequence_storage[i].sequence_);
-			   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size, starting_kmers);
+			   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size);
 				}
 		    }
 	    	sequence_storage.clear();
@@ -156,9 +150,9 @@ int main(int argc, char **argv) {
     	for (int i = 0; i < count; i++) {
 	    	// vector<ProtKmerGenerator> kmer_gens;
 		   	if (sequence_storage[i].sequence_.size() >= kmer_size) {
-		   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size, starting_kmers);
+		   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size);
 		   		RevComp(sequence_storage[i].sequence_);
-		   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size, starting_kmers);
+		   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size);
 			}
 	    }
 	    // timer.stop();
@@ -166,16 +160,16 @@ int main(int argc, char **argv) {
 
     // cerr << "multi-process time: " << timer.elapsed() << endl;
 
-    for (HashSet<KmerHelper>::iterator i = starting_kmers.begin(); i != starting_kmers.end() ; i++) {
-    	cout << "rplB\t" << "SRR172903.7702200\t" << "357259128\t";
-    	printf("%s\ttrue\t%d\t%s\t%d\n", /*i->nucl_seq_.c_str()*/ "haha", i->frame_, i->kmer_.decodePacked().c_str(), i->position_);
-    }
+    // for (HashSet<KmerHelper>::iterator i = starting_kmers.begin(); i != starting_kmers.end() ; i++) {
+    // 	cout << "rplB\t" << "SRR172903.7702200\t" << "357259128\t";
+    // 	printf("%s\ttrue\t%d\t%s\t%d\n", /*i->nucl_seq_.c_str()*/ "haha", i->frame_, i->kmer_.decodePacked().c_str(), i->position_);
+    // }
 
     kseq_destroy(seq);
     gzclose(fp);
 	return 0;
 }
-void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size, HashSet<KmerHelper> &starting_kmers) {
+void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size) {
 	vector<ProtKmerGenerator> kmer_gens;
 	seq::NTSequence nts = seq::NTSequence("", "", sequence);
 	for (int i = 0; i < 3; i++) {
@@ -190,40 +184,13 @@ void ProcessSequenceMulti(const string &sequence, const string &name, const stri
     			// cout << kmer.decodePacked() << endl;
     			int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
 
-    			printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), gen + 1, kmer.decodePacked().c_str(), kmer_gens[gen].getPosition());
-    			// starting_kmers.insert(KmerHelper(kmer, sequence.substr(nucl_pos, kmer_size), gen+1, kmer_gens[gen].getPosition()));
+    			// printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), gen + 1, kmer.decodePacked().c_str(), kmer_gens[gen].getPosition());
+    			// printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), gen + 1, kmer.decodePacked().c_str(), iter->model_position);
+    			printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), 1, kmer.decodePacked().c_str(), iter->model_position);
+
     		}
     	}
     }	
-}
-
-void ProcessSequence(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size) {
-	vector<ProtKmerGenerator> kmer_gens;
-	for (int i = 0; i < 3; i++) {
-	    string seq = sequence.substr(i);
-	    seq::NTSequence nts = seq::NTSequence(name, comment, seq);
-	    seq::AASequence aa = seq::AASequence::translate(nts.begin(), nts.begin() + (nts.size() / 3) * 3);
-	    // cout << ">" << string_name << endl;
-	    // cout << aa.asString() << endl;
-
-	    kmer_gens.push_back(ProtKmerGenerator(aa.asString(), kmer_size/3));
-	}
-
-	ProtKmer kmer;
-	for (int gen = 0; gen < kmer_gens.size(); gen++) {
-	  	while (kmer_gens[gen].hasNext()) {
-	   		kmer = kmer_gens[gen].next();
-
-	   		// cout << kmer.decodePacked() << endl;
-
-	   		HashSet<ProtKmer>::iterator iter = kmerSet.find(kmer);
-	   		if (iter != NULL) {
-	   			int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
-	   			cout << "rplB\t" << "SRR172903.7702200\t" << "357259128\t";
-	   			printf("%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), gen+1, kmer.decodePacked().c_str(), kmer_gens[gen].getPosition());
-	   		}
-	   	}
-	}
 }
 
 char Comp(char c) {

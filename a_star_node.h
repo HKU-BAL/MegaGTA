@@ -72,14 +72,6 @@ public:
 		}
 		return true;
 	}
-	
-	// AStarNode& operator= (const AStarNode *node2) {
-	// 	kmer = node2->kmer;
-	// 	state = node2->state;
-	// 	state_no = node2->state_no;
-	// 	discovered_from = node2->discovered_from;
-	// 	return *this;
-	// }
 
 	uint64_t hash() const {
 		return CityHash64((const char*)kmer.kmers, sizeof(kmer.kmers[0]) * 2) + state + state_no;

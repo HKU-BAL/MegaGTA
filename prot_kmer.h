@@ -14,7 +14,9 @@ class ProtKmer : public Kmer {
 			// setUp();
 			initialize(char_kmer);
 		}
-
+		
+	public:
+		int model_position;
 	public:
 		static uint8_t ascii_map[127];
 	private:
