@@ -35,20 +35,19 @@ public:
             exit_probabilities[i] = log(2.0 / (i + 2)) * 2;
         }
 	}
-	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg) {
+	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int &count) {
 		//right, forward search
 		AStarNode goal_node;
 		string right_max_seq, left_max_seq;
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node);
-		partialResultFromGoal(goal_node, true, right_max_seq);	
-
+		partialResultFromGoal(goal_node, true, right_max_seq);
 		//left, reverse search
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
 		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node);
 		partialResultFromGoal(goal_node, false, left_max_seq);
 		delectAStarNodes();
 		RevComp(left_max_seq);
-		printf(">rplB\n%s%s%s\n", left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
+		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
 	}
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
 		while (goal.discovered_from != NULL) {
@@ -63,6 +62,7 @@ public:
 	double scoreStart(ProfileHMM &hmm, string &starting_kmer, int starting_state) {
 		double ret = 0;
 		for (int i = 1; i <= starting_kmer.size(); i++) {
+			// cout << i << " " <<hmm.msc(starting_state + i, starting_kmer[i-1]) << " " << hmm.tsc(starting_state + i - 1, ProfileHMM::MM) << " " << hmm.getMaxMatchEmission(starting_state + i) << endl;
 			ret += hmm.msc(starting_state + i, starting_kmer[i-1]) + hmm.tsc(starting_state + i - 1, ProfileHMM::MM) - hmm.getMaxMatchEmission(starting_state + i);
 		}
 		return ret;
@@ -106,10 +106,11 @@ public:
 			starting_node = AStarNode(NULL, kmer, starting_state, 'm');
 			starting_node.length = framed_word.size();
 		}
+
 		starting_node.fval = 0;
 		starting_node.score = scoreStart(hmm, scoring_word, starting_state);
 		starting_node.real_score = realScoreStart(hmm, scoring_word, starting_state);
-
+		// cout << "starting_node score = " << starting_node.score << " starting_node real_score = " << starting_node.real_score <<  endl;
 		return astarSearch(hmm, starting_node, dbg, forward, node_enumerator, goal_node);
 	}
 
@@ -118,6 +119,7 @@ public:
 			goal_node = starting_node;
 			return true;
 		}
+
 		priority_queue<AStarNode, vector<AStarNode>> open;
 		closed.clear();
 		open_hash.clear();
@@ -139,8 +141,7 @@ public:
 			for (AStarNode next : node_enumerator.enumeratorNodes(starting_node, forward, dbg, &got->second)) {
 				open.push(next);
 			}
-		}
-		
+		}	
 
 		if (open.empty()) {
 			return false;
@@ -151,6 +152,8 @@ public:
 			auto curr_ptr = new AStarNode();
 			auto &curr = *curr_ptr;
 			curr = open.top();
+
+			// cout << "curr kmer = " <<curr.kmer.decodePacked() << " state_no = " << curr.state_no << " fval = " << curr.fval << endl;
 
 			created_nodes.push_back(curr_ptr);
 			open.pop();

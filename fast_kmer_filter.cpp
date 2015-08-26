@@ -9,7 +9,6 @@
 #include <string.h>
 #include <string>
 #include <vector>
-#include <algorithm>
 #include "src/sequence/NTSequence.h"
 #include "src/sequence/AASequence.h"
 
@@ -76,7 +75,8 @@ int main(int argc, char **argv) {
     kseq_t *seq = kseq_init(fp); // kseq to read files
     kseq_t *seq2 = kseq_init(fp2);
 
-    int kmer_size = 45;
+    // int kmer_size = 45;
+    int kmer_size = stoi(argv[3]);
     int batch_size = 1 * 1024 * 1024;
 
     HashSet<ProtKmer> kmerSet;

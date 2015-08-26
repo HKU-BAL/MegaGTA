@@ -17,7 +17,7 @@ class NodeEnumerator
 {
 private:
 	static const int SCALE = 10000;
-	static constexpr double hweight = 1.0;
+	static constexpr double hweight = 2.0;
 	AStarNode next;
 	uint8_t next_nucl;
 	char emission;
@@ -51,6 +51,9 @@ public:
 		// 	cout << "RC = "<<curr.kmer.decodePacked() << '\n';
 		// }
 		vector<AStarNode> ret;
+
+		// cout << "enum in kmer = " << curr.kmer.decodePacked() << " state_no = " << curr.state_no << " state = " << curr.state << endl;
+
 		next_state = curr.state_no + 1;
 		switch (curr.state) {
 			case 'm':
@@ -79,7 +82,7 @@ public:
 		}
 		int64_t node_id = dbg.IndexBinarySearch(seq);
 		if (node_id == -1) {
-	    	cout << "no such seq \n";
+	    	// cout << "no such seq \n";
 	    	return ret;
 	    } else {
 	    	int64_t next_node[4], next_node_2[4], next_node_3[4];
@@ -112,7 +115,7 @@ public:
 	    	}
 
 	    	//translate to aa
-	    	set<char> aa;
+	    	// set<char> aa;
 	    	for (int i = 0; i < 64; ++i) {
 	    		if (codons[i].size() == 3) {
 	    			// cout << curr.kmer.decodePacked() << " " << curr.state_no <<'\n';
@@ -126,10 +129,10 @@ public:
 	    			if (emission == '*') {
 	    				continue;
 	    			}
-	    			set<char>::iterator it = aa.find(emission);
-	    			aa.insert(emission);
+	    			// set<char>::iterator it = aa.find(emission);
+	    			// aa.insert(emission);
 	    			// cout << "emission = " << emission << '\n';
-    				if (it == aa.end()) {
+    				// if (it == aa.end()) {
     					next = AStarNode(&curr, next_kmer, next_state, 'm');
 			    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
 			    		if (next.real_score >= curr.max_score) {
@@ -144,9 +147,13 @@ public:
 			    		}
 			    		next.emission = emission;
 			    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
+			    		// cout << "match_trans = " << match_trans << " hmm->msc(next_state, emission)" << hmm->msc(next_state, emission) << " max_match_emission = " << max_match_emission << endl;
 			    		next.length = curr.length + 1;
 			    		next.score = curr.score + next.this_node_score;
 			    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('m', next_state)));
+
+			    		// cout << "kmer = " <<next.kmer.decodePacked() << " curr.score = " << curr.score << " next.this_node_score = " << next.this_node_score << " fval = " << next.fval << endl;
+
 			    		next.indels = curr.indels;
 
 			    		ret.push_back(next);
@@ -169,7 +176,7 @@ public:
 
 				    		ret.push_back(next);
 			    		}
-    				}
+    				// }
 	    		}
 	    	}
 

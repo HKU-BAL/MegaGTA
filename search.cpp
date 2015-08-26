@@ -8,8 +8,9 @@
 #include <sstream>
 #include <vector>
 #include <utility>
-#include <iostream>
+#include <algorithm>
 #include <omp.h>
+
 
 using namespace std;
 
@@ -42,6 +43,7 @@ int main(int argc, char **argv) {
 			for (int i = 0; i < 8; ++i) {
 				iss >> line_array[i];
 			}
+			transform(line_array[3].begin(), line_array[3].end(), line_array[3].begin(), ::tolower);
 			starting_kmer = make_pair(line_array[3], stoi(line_array[7]) -1 );
 			starting_kmer_storage.push_back(starting_kmer);
 		}
@@ -56,7 +58,7 @@ int main(int argc, char **argv) {
 	
 		#pragma omp parallel for schedule(dynamic, 1)
 	for (int i = 0; i < starting_kmer_storage.size(); ++i) {
-		search[omp_get_thread_num()].search(starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second, for_node_enumerator[omp_get_thread_num()], rev_node_enumerator[omp_get_thread_num()], dbg);
+		search[omp_get_thread_num()].search(starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second, for_node_enumerator[omp_get_thread_num()], rev_node_enumerator[omp_get_thread_num()], dbg, i);
 	}
 
 	return 0;

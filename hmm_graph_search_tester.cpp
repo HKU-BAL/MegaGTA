@@ -4,11 +4,13 @@
 #include "most_probable_path.h"
 #include "hmmer3b_parser.h"
 #include "succinct_dbg.h"
+#include <iostream>
 
 using namespace std;
 
 int main(int argc, char **argv) {
 	NuclKmer::setUp();
+	HMMGraphSearch::setUp();
 	int pruning = 20;
 	HMMGraphSearch search = HMMGraphSearch(pruning);
 	SuccinctDBG dbg;
@@ -24,69 +26,22 @@ int main(int argc, char **argv) {
 	MostProbablePath rev_hcost = MostProbablePath(reverse_hmm);
 	NodeEnumerator rev_node_enumerator = NodeEnumerator(reverse_hmm, rev_hcost);
 
-	string starting_kmer = "gctggacgcagccgctggctcgggcgcaagccacaccagcgcggc";
-	int starting_state = 207;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
+	string starting_kmer = "atggctattaaaaagtataagccaataacaaatggtcgtcgtaat";
+	int starting_state = 0;
+	int count = 0;
+	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count);
 
-	starting_kmer = "ggccgctctcgttggatgcgtaaacgcccaactgttcgtggtagc";
-	starting_state = 208;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
+	// starting_kmer = "aaaaaatcttctgacaaacttatcgttcgtggacgtaagaaaaaa";
+	// starting_state = 261;
+	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
 
-	starting_kmer = "gctggccgctctcgttggatgcgtaaacgcccaactgttcgtggt";
-	starting_state = 207;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
+	// starting_kmer = "ggtaaaaaatcatcagacaaacttatcgttcgtggacgtaagaaa";
+	// starting_state = 260;
+	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
 
-	starting_kmer = "aaggctggacgcagccgctggctcgggcgcaagccacaccagcgc";
-	starting_state = 206;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "ggcaaggctggacgcagccgctggctcgggcgcaagccacaccag";
-	starting_state = 205;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "ggtaaagctggccgctctcgttggatgcgtaaacgcccaactgtt";
-	starting_state = 205;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "aaagctggccgctctcgttggatgcgtaaacgcccaactgttcgt";
-	starting_state = 206;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "ctgggcaaggctggacgcagccgctggctcgggcgcaagccacac";
-	starting_state = 204;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "attggtaaagctggccgctctcgttggatgcgtaaacgcccaact";
-	starting_state = 204;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "aacattggtaaagctggccgctctcgttggatgcgtaaacgccca";
-	starting_state = 203;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "tctggcgaagttcgtatgatcttagcaacttgccgtgcaacaatc";
-	starting_state = 177;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "ccttccggcgaactgcgccgcgttcacagcgagtgctacgccacc";
-	starting_state = 176;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "aactctggcgaagttcgtatgatcttagcaacttgccgtgcaaca";
-	starting_state = 176;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "attaaaaagtacaaacctaccacaaatggccgtcgtaacatgaca";
-	starting_state = 2;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "gccgtcaaaaagtaccgtccctatacccccagccgtcgccagatg";
-	starting_state = 1;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
-
-	starting_kmer = "atggccgtcaaaaagtaccgtccctatacccccagccgtcgccag";
-	starting_state = 0;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
+	// starting_kmer = "cgtggtaaaaaatcatcagacaaacttatcgttcgtggacgtaag";
+	// starting_state = 259;
+	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
 
 	return 0;
 }
