@@ -6,7 +6,7 @@
 #include <string>
 #include <stdexcept>
 #include <ctype.h>
-#include "kmer_1.h"
+#include "kmer.h"
 #include "prot_kmer.h"
 #include <string.h>
 

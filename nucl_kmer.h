@@ -1,7 +1,7 @@
 #ifndef NUCL_KMER_H__
 #define NUCL_KMER_H__
 
-#include "kmer_1.h"
+#include "kmer.h"
 #include <math.h>
 #include <string.h>
 #include <algorithm>

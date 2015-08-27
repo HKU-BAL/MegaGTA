@@ -37,6 +37,7 @@ public:
 	}
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int &count) {
 		//right, forward search
+		// printf(">test_rplB_contig_%d_contig_%d_%s\n", count*2, count*2+1, starting_kmer.c_str());
 		AStarNode goal_node;
 		string right_max_seq, left_max_seq;
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node);
@@ -48,6 +49,7 @@ public:
 		delectAStarNodes();
 		RevComp(left_max_seq);
 		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
+		// printf("%s%s%s\n", left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
 	}
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
 		while (goal.discovered_from != NULL) {

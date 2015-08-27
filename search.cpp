@@ -19,6 +19,9 @@ int main(int argc, char **argv) {
 		fprintf(stderr, "Usage: %s <succinct_dbg> <forward_hmm> <reverse_hmm> <starting_kmers>\n", argv[0]);
 		exit(1);
 	}
+
+	setvbuf ( stdout , NULL , _IOLBF , 1024 );
+
 	int heuristic_pruning = 20;
 	NuclKmer::setUp();
 	HMMGraphSearch::setUp();

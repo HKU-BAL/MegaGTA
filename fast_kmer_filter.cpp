@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 	NuclKmer::setUp();
 
 	if (argc == 1) {
-		fprintf(stderr, "Usage: %s <ref_seq> <read_seq>\n", argv[0]);
+		fprintf(stderr, "Usage: %s <ref_seq> <read_seq> <k_size>\n", argv[0]);
 		exit(1);
 	}
 
