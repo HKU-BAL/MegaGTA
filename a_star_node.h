@@ -21,11 +21,12 @@ public:
 	double real_score;
 	int length;
 	char emission;
+	int64_t node_id;
 
 	int negative_count = 0;
 	double max_score = 0;
 
-	AStarNode() {};
+	AStarNode() : discovered_from(NULL) { nucl_emission[0] = nucl_emission[1] = nucl_emission[2] = 'a'; };
 	AStarNode(AStarNode *discovered_from, NuclKmer &kmer, int state_no, char state)
 	: discovered_from(discovered_from), kmer(kmer), state_no(state_no), state(state) {};
 	// ~AStarNode();

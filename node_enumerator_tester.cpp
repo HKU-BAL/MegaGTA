@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 	string kmer = "cgtaataaaaaagctaaatcagacaaacttatcgttcgtcgtcgt";
 	NuclKmer nucl_kmer = NuclKmer(kmer);
 	AStarNode curr = AStarNode(NULL, nucl_kmer, 17, 'm');
-	vector<AStarNode> result = node_enumerator.enumeratorNodes(curr, dbg);
+	vector<AStarNode> result = node_enumerator.enumerateNodes(curr, dbg);
 	cout << "result size = " << result.size() << '\n';
 	for (int i = 0; i < result.size(); i++) {
 		cout << result[i].state << " "<<result[i].kmer.decodePacked() << " " <<result[i].emission <<'\n';

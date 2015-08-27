@@ -21,6 +21,7 @@ class HMMGraphSearch
 private:
 	int heuristic_pruning = 20;
 	static double exit_probabilities[3000];
+	static int dna_map[128];
 
 	HashMap<AStarNode, AStarNode> term_nodes;
 	deque<AStarNode*> created_nodes;
@@ -34,37 +35,70 @@ public:
 		for (int i = 0; i < 3000; i++) {
             exit_probabilities[i] = log(2.0 / (i + 2)) * 2;
         }
+        memset(dna_map, -1, sizeof(dna_map));
+		for (int i = 0; i < 10; ++i) {
+			dna_map["ACGTNacgtn"[i]] = "1234312343"[i] - '0';
+		}
 	}
-	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int &count) {
+	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count) {
+		uint8_t seq[dbg.kmer_k];
+		for (int i = 0; i < dbg.kmer_k; ++i) {
+			seq[i] = dna_map[starting_kmer[i]]; // $->0, A->1, C->2, G->3, T->4
+		}
+		// starting_node.node_id = dbg.IndexBinarySearch(seq);
+		int64_t node_id = dbg.IndexBinarySearch(seq);
+
 		//right, forward search
-		// printf(">test_rplB_contig_%d_contig_%d_%s\n", count*2, count*2+1, starting_kmer.c_str());
 		AStarNode goal_node;
 		string right_max_seq, left_max_seq;
-		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node);
+		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node, node_id);
 		partialResultFromGoal(goal_node, true, right_max_seq);
+		// printf("%s\n", right_max_seq.c_str());
+
 		//left, reverse search
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
-		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node);
+		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node, node_id);
+		// printf("%dfuck1\n", count);
 		partialResultFromGoal(goal_node, false, left_max_seq);
+		// printf("%dfuck2\n", count);
 		delectAStarNodes();
 		RevComp(left_max_seq);
+
 		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
+		
 		// printf("%s%s%s\n", left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
 	}
+	// void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
+	// 	auto cur_ptr = &goal;
+	// 	max_seq.clear();
+	// 	while (cur_ptr->discovered_from != NULL) {
+	// 		if (cur_ptr->state != 'd') {
+	// 			for (int i = 0; i < 3; ++i) {
+	// 				max_seq.push_back(cur_ptr->nucl_emission[2-i]);
+	// 			}
+	// 		}
+	// 		cur_ptr = cur_ptr->discovered_from;
+	// 	}
+	// 	reverse(max_seq.begin(), max_seq.end());
+	// }
+
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
+		max_seq.clear();
 		while (goal.discovered_from != NULL) {
 			if (goal.state != 'd') {
-				max_seq = goal.nucl_emission + max_seq;
+				for (int i = 0; i < 3; ++i) {
+					max_seq.push_back(goal.nucl_emission[2-i]);
+				}
 			}
 			goal = *goal.discovered_from;
-		}		
+		}
+		reverse(max_seq.begin(), max_seq.end());
 	}
 
 
 	double scoreStart(ProfileHMM &hmm, string &starting_kmer, int starting_state) {
 		double ret = 0;
 		for (int i = 1; i <= starting_kmer.size(); i++) {
-			// cout << i << " " <<hmm.msc(starting_state + i, starting_kmer[i-1]) << " " << hmm.tsc(starting_state + i - 1, ProfileHMM::MM) << " " << hmm.getMaxMatchEmission(starting_state + i) << endl;
 			ret += hmm.msc(starting_state + i, starting_kmer[i-1]) + hmm.tsc(starting_state + i - 1, ProfileHMM::MM) - hmm.getMaxMatchEmission(starting_state + i);
 		}
 		return ret;
@@ -78,7 +112,7 @@ public:
 		return ret;
 	}
 
-	bool astarSearch(ProfileHMM &hmm, int &starting_state, string &framed_word, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, AStarNode &goal_node) {
+	bool astarSearch(ProfileHMM &hmm, int &starting_state, string &framed_word, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, AStarNode &goal_node, int64_t node_id) {
 		string scoring_word;
 		if (!forward) {
 			if (hmm.getAlphabet() == ProfileHMM::protein) {
@@ -112,7 +146,16 @@ public:
 		starting_node.fval = 0;
 		starting_node.score = scoreStart(hmm, scoring_word, starting_state);
 		starting_node.real_score = realScoreStart(hmm, scoring_word, starting_state);
-		// cout << "starting_node score = " << starting_node.score << " starting_node real_score = " << starting_node.real_score <<  endl;
+
+
+		//this can be further simplify
+		// uint8_t seq[dbg.kmer_k];
+		// for (int i = 0; i < dbg.kmer_k; ++i) {
+		// 	seq[i] = dna_map[framed_word[i]]; // $->0, A->1, C->2, G->3, T->4
+		// }
+		// starting_node.node_id = dbg.IndexBinarySearch(seq);
+		starting_node.node_id = node_id;
+
 		return astarSearch(hmm, starting_node, dbg, forward, node_enumerator, goal_node);
 	}
 
@@ -135,12 +178,13 @@ public:
 
 		//need to add a cache here
 		HashMap<AStarNode, AStarNode>::iterator got = term_nodes.find(starting_node);
+
 		if (got == term_nodes.end()) {
-			for (AStarNode next : node_enumerator.enumeratorNodes(starting_node, forward, dbg)) {
+			for (AStarNode next : node_enumerator.enumerateNodes(starting_node, forward, dbg)) {
 				open.push(next);
 			}
 		} else {
-			for (AStarNode next : node_enumerator.enumeratorNodes(starting_node, forward, dbg, &got->second)) {
+			for (AStarNode next : node_enumerator.enumerateNodes(starting_node, forward, dbg, &got->second)) {
 				open.push(next);
 			}
 		}	
@@ -150,12 +194,9 @@ public:
 		}
 		AStarNode inter_goal = starting_node;
 		while (!open.empty()) {
-			// cout << "open size = " <<open.size() << '\n';
 			auto curr_ptr = new AStarNode();
 			auto &curr = *curr_ptr;
 			curr = open.top();
-
-			// cout << "curr kmer = " <<curr.kmer.decodePacked() << " state_no = " << curr.state_no << " fval = " << curr.fval << endl;
 
 			created_nodes.push_back(curr_ptr);
 			open.pop();
@@ -164,7 +205,6 @@ public:
 				continue;
 			}
 			if (curr.state_no >= hmm.modelLength()) {
-				// cout << curr.state_no << " " << hmm.modelLength() << " \n";
 				curr.partial = false;
 				if ((curr.real_score + exit_probabilities[curr.length]) / log(2) 
 						> (inter_goal.real_score + exit_probabilities[inter_goal.length]) / log(2)) {
@@ -182,9 +222,9 @@ public:
 			vector<AStarNode> temp_nodes_to_open;
 			got = term_nodes.find(curr);
 			if (got == term_nodes.end()) {
-				temp_nodes_to_open = node_enumerator.enumeratorNodes(curr, forward, dbg);
+				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg);
 			} else {
-				temp_nodes_to_open = node_enumerator.enumeratorNodes(curr, forward, dbg, &got->second);
+				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg, &got->second);
 			}
 			for (AStarNode &next : temp_nodes_to_open) {
 				bool open_node = false;
@@ -231,7 +271,6 @@ public:
 	}
 
 	void getHighestScoreNode(AStarNode &inter_goal, AStarNode &goal_node) {
-		// cout << "inter_goal discovered_from " << inter_goal.discovered_from->state_no <<'\n';
 		AStarNode temp_goal = inter_goal;
 		goal_node = inter_goal;
 		while (temp_goal.discovered_from != NULL) {

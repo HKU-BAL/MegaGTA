@@ -29,30 +29,24 @@ private:
 	ProfileHMM *hmm;
 	bool prot_search;
 	MostProbablePath *hcost;
-	static int dna_map[128];
+	// static int dna_map[128];
 
 public:
 	NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost) {
 		hmm = &_hmm;
 		prot_search = _hmm.getAlphabet() == ProfileHMM::protein;
 		hcost = &_hcost;
-		memset(dna_map, -1, sizeof(dna_map));
-		for (int i = 0; i < 10; ++i) {
-			dna_map["ACGTNacgtn"[i]] = "1234312343"[i] - '0';
-		}
+		// memset(dna_map, -1, sizeof(dna_map));
+		// for (int i = 0; i < 10; ++i) {
+		// 	dna_map["ACGTNacgtn"[i]] = "1234312343"[i] - '0';
+		// }
 	};
 	~NodeEnumerator() {};
-	vector<AStarNode> enumeratorNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg) {
-		return enumeratorNodes(curr, forward, dbg, NULL);
+	vector<AStarNode> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg) {
+		return enumerateNodes(curr, forward, dbg, NULL);
 	}
-	vector<AStarNode> enumeratorNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg, AStarNode *child_node) {
-		//test
-		// if (!forward) {
-		// 	cout << "RC = "<<curr.kmer.decodePacked() << '\n';
-		// }
+	vector<AStarNode> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg, AStarNode *child_node) {
 		vector<AStarNode> ret;
-
-		// cout << "enum in kmer = " << curr.kmer.decodePacked() << " state_no = " << curr.state_no << " state = " << curr.state << endl;
 
 		next_state = curr.state_no + 1;
 		switch (curr.state) {
@@ -75,25 +69,28 @@ public:
 				assert(false);
 		}
 		double max_match_emission = hmm->getMaxMatchEmission(next_state);
-		uint8_t seq[dbg.kmer_k];
-		string buf = curr.kmer.decodePacked();
-		for (int i = 0; i < dbg.kmer_k; ++i) {
-			seq[i] = dna_map[buf[i]]; // $->0, A->1, C->2, G->3, T->4
-		}
-		int64_t node_id = dbg.IndexBinarySearch(seq);
-		if (node_id == -1) {
-	    	// cout << "no such seq \n";
+
+		// uint8_t seq[dbg.kmer_k];
+		// string buf = curr.kmer.decodePacked();
+		// for (int i = 0; i < dbg.kmer_k; ++i) {
+		// 	seq[i] = dna_map[buf[i]]; // $->0, A->1, C->2, G->3, T->4
+		// }
+		// int64_t node_id = dbg.IndexBinarySearch(seq);
+
+		if (curr.node_id == -1) {
 	    	return ret;
 	    } else {
 	    	int64_t next_node[4], next_node_2[4], next_node_3[4];
 	    	vector<uint8_t> codons[64];
-	    	int outd = dbg.NextNodes(node_id, next_node);
+	    	vector<int64_t> ids[64];
+	    	int outd = dbg.NextNodes(curr.node_id, next_node);
 	    	if (outd == 0) {
 	    		return ret;
 	    	} else {
 	    		for (int i = 0; i < outd; ++i) {
 	    			for (int j = 0; j < 16; ++j) {
 	    				codons[i * 16 + j].push_back(dbg.GetNodeLastChar(next_node[i])-1);
+	    				ids[i * 16 + j].push_back(next_node[i]);
 	    			}
 	    			int outd_2 = dbg.NextNodes(next_node[i], next_node_2);
 	    			if (outd_2 == 0) {
@@ -102,6 +99,7 @@ public:
     				for (int j = 0; j < outd_2; ++j) {
     					for (int k = 0; k < 4; ++k) {
     						codons[i * 16 + j * 4 + k].push_back(dbg.GetNodeLastChar(next_node_2[j])-1);
+    						ids[i * 16 + j * 4 + k].push_back(next_node_2[j]);
     					}
     					int outd_3 = dbg.NextNodes(next_node_2[j], next_node_3);
     					if (outd_3 == 0) {
@@ -109,6 +107,7 @@ public:
     					}
     					for (int k = 0; k < outd_3; ++k) {
     						codons[i * 16 + j * 4 + k].push_back(dbg.GetNodeLastChar(next_node_3[k])-1);
+    						ids[i * 16 + j * 4 + k].push_back(next_node_3[k]);
     					}
     				}
 		    	}
@@ -118,9 +117,7 @@ public:
 	    	// set<char> aa;
 	    	for (int i = 0; i < 64; ++i) {
 	    		if (codons[i].size() == 3) {
-	    			// cout << curr.kmer.decodePacked() << " " << curr.state_no <<'\n';
 	    			next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
-	    			// cout << next_kmer.decodePacked() << " " << next_state << '\n';
 	    			if (!forward) {
 	    				emission = Codon::rc_codonTable[codons[i][0]][codons[i][1]][codons[i][2]];
 	    			} else {
@@ -129,54 +126,50 @@ public:
 	    			if (emission == '*') {
 	    				continue;
 	    			}
-	    			// set<char>::iterator it = aa.find(emission);
-	    			// aa.insert(emission);
-	    			// cout << "emission = " << emission << '\n';
-    				// if (it == aa.end()) {
-    					next = AStarNode(&curr, next_kmer, next_state, 'm');
-			    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
-			    		if (next.real_score >= curr.max_score) {
-			    			next.max_score = next.real_score;
-			    			next.negative_count = 0;
-			    		} else {
-			    			next.max_score = curr.max_score;
-			    			next.negative_count = curr.negative_count + 1;
-			    		}
+
+					next = AStarNode(&curr, next_kmer, next_state, 'm');
+		    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
+		    		if (next.real_score >= curr.max_score) {
+		    			next.max_score = next.real_score;
+		    			next.negative_count = 0;
+		    		} else {
+		    			next.max_score = curr.max_score;
+		    			next.negative_count = curr.negative_count + 1;
+		    		}
+		    		for (int j = 0; j < 3; j++) {
+		    			next.nucl_emission[j] = "acgt"[codons[i][j]];
+		    		}
+		    		next.emission = emission;
+		    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
+		    		next.length = curr.length + 1;
+		    		next.score = curr.score + next.this_node_score;
+		    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('m', next_state)));
+		    		next.indels = curr.indels;
+
+		    		next.node_id = ids[i][2];
+
+		    		ret.push_back(next);
+
+		    		//insert node
+		    		if (curr.state != 'd') {
+		    			next = AStarNode(&curr, next_kmer, curr.state_no, 'i');
+			    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
+			    		next.max_score = curr.max_score;
+			    		next.negative_count = curr.negative_count + 1;
 			    		for (int j = 0; j < 3; j++) {
 			    			next.nucl_emission[j] = "acgt"[codons[i][j]];
 			    		}
 			    		next.emission = emission;
-			    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
-			    		// cout << "match_trans = " << match_trans << " hmm->msc(next_state, emission)" << hmm->msc(next_state, emission) << " max_match_emission = " << max_match_emission << endl;
+			    		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
 			    		next.length = curr.length + 1;
 			    		next.score = curr.score + next.this_node_score;
-			    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('m', next_state)));
+			    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('i', curr.state_no)));
+			    		next.indels = curr.indels + 1;
 
-			    		// cout << "kmer = " <<next.kmer.decodePacked() << " curr.score = " << curr.score << " next.this_node_score = " << next.this_node_score << " fval = " << next.fval << endl;
-
-			    		next.indels = curr.indels;
+			    		next.node_id = ids[i][2];
 
 			    		ret.push_back(next);
-
-			    		//insert node
-			    		if (curr.state != 'd') {
-			    			next = AStarNode(&curr, next_kmer, curr.state_no, 'i');
-				    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
-				    		next.max_score = curr.max_score;
-				    		next.negative_count = curr.negative_count + 1;
-				    		for (int j = 0; j < 3; j++) {
-				    			next.nucl_emission[j] = "acgt"[codons[i][j]];
-				    		}
-				    		next.emission = emission;
-				    		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
-				    		next.length = curr.length + 1;
-				    		next.score = curr.score + next.this_node_score;
-				    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('i', curr.state_no)));
-				    		next.indels = curr.indels + 1;
-
-				    		ret.push_back(next);
-			    		}
-    				// }
+		    		}
 	    		}
 	    	}
 
@@ -195,6 +188,8 @@ public:
 	    		next.score = curr.score + next.this_node_score;
 	    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('d', next_state)));
 	    		next.indels = curr.indels + 1;
+
+	    		next.node_id = curr.node_id;
 
 	    		ret.push_back(next);
 	    	}
