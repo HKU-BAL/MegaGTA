@@ -26,8 +26,8 @@ int main(int argc, char **argv) {
 	MostProbablePath rev_hcost = MostProbablePath(reverse_hmm);
 	NodeEnumerator rev_node_enumerator = NodeEnumerator(reverse_hmm, rev_hcost);
 
-	string starting_kmer = "AAAAAAAAAAAACCTATCACATCATCT";
-	int starting_state = 3;
+	string starting_kmer = "AAATTGACTGTAAGACACCATGGTGGTGGA";
+	int starting_state = 47;
 	int count = 0;
 	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count);
 

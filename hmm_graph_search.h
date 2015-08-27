@@ -50,7 +50,7 @@ public:
 
 		//right, forward search
 		AStarNode goal_node;
-		string right_max_seq, left_max_seq;
+		string right_max_seq = "", left_max_seq ="";
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node, node_id);
 		partialResultFromGoal(goal_node, true, right_max_seq);
 		// printf("%s\n", right_max_seq.c_str());
@@ -86,10 +86,14 @@ public:
 		// max_seq.clear();
 		while (goal.discovered_from != NULL) {
 			if (goal.state != 'd') {
-				max_seq = goal.nucl_emission + max_seq;
+				// for (int i = 0; i < 3; ++i) {
+				// 	max_seq += goal.nucl_emission[2-i];
+				// }
+				max_seq = string(goal.nucl_emission) + max_seq;
 			}
 			goal = *goal.discovered_from;
-		}		
+		}
+		// reverse(max_seq.begin(), max_seq.end());
 	}
 
 
