@@ -83,16 +83,13 @@ public:
 	// }
 
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
-		max_seq.clear();
+		// max_seq.clear();
 		while (goal.discovered_from != NULL) {
 			if (goal.state != 'd') {
-				for (int i = 0; i < 3; ++i) {
-					max_seq.push_back(goal.nucl_emission[2-i]);
-				}
+				max_seq = goal.nucl_emission + max_seq;
 			}
 			goal = *goal.discovered_from;
-		}
-		reverse(max_seq.begin(), max_seq.end());
+		}		
 	}
 
 
