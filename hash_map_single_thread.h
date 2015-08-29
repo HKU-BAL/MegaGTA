@@ -1,6 +1,6 @@
 /**
  * @file hash_map.h
- * @brief HashMap Class.
+ * @brief HashMapSingleThread Class.
  * @author Yu Peng (ypeng@cs.hku.hk)
  * @modified by Huang Yukun, disable openmp parallel
  * @version 1.0.0
@@ -28,12 +28,12 @@
  */
 template <typename Key, typename Value, typename HashFunc = Hash<Key>,
          typename EqualKey = std::equal_to<Key> >
-class HashMap
+class HashMapSingleThread
 {
 public:
-    typedef HashTable<std::pair<Key, Value>, Key, HashFunc, 
+    typedef HashTableSingleThread<std::pair<Key, Value>, Key, HashFunc, 
             Select1st<std::pair<Key, Value> >, EqualKey> hash_table_type;
-    typedef HashMap<Key, Value, HashFunc, EqualKey> hash_map_type;
+    typedef HashMapSingleThread<Key, Value, HashFunc, EqualKey> hash_map_type;
 
     typedef typename hash_table_type::key_type key_type;
     typedef typename hash_table_type::value_type value_type;
@@ -54,12 +54,12 @@ public:
     typedef typename hash_table_type::iterator iterator;
     typedef typename hash_table_type::const_iterator const_iterator;
 
-    explicit HashMap(const hash_func_type &hash = hash_func_type(),
+    explicit HashMapSingleThread(const hash_func_type &hash = hash_func_type(),
             const key_equal_func_type key_equal = key_equal_func_type())
         : hash_table_(hash, Select1st<std::pair<Key, Value> >(), key_equal)
     {}
 
-    HashMap(const hash_map_type &hash_map)
+    HashMapSingleThread(const hash_map_type &hash_map)
         : hash_table_(hash_map.hash_table_)
     {}
 
@@ -118,8 +118,8 @@ private:
 namespace std
 {
 template <typename Key, typename Value, typename HashFunc, typename EqualKey>
-inline void swap(HashMap<Key, Value, HashFunc, EqualKey> &x,
-        HashMap<Key, Value, HashFunc, EqualKey> &y)
+inline void swap(HashMapSingleThread<Key, Value, HashFunc, EqualKey> &x,
+        HashMapSingleThread<Key, Value, HashFunc, EqualKey> &y)
 { x.swap(y); }
 }
 

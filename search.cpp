@@ -4,6 +4,7 @@
 #include "most_probable_path.h"
 #include "hmmer3b_parser.h"
 #include "succinct_dbg.h"
+#include "hash_map.h"
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -58,10 +59,13 @@ int main(int argc, char **argv) {
 		for_node_enumerator.push_back(NodeEnumerator(forward_hmm, for_hcost));
 		rev_node_enumerator.push_back(NodeEnumerator(reverse_hmm, rev_hcost));
 	}
+
+	HashMap<AStarNode, AStarNode> term_nodes;
 	
 		#pragma omp parallel for schedule(dynamic, 1)
 	for (int i = 0; i < starting_kmer_storage.size(); ++i) {
-		search[omp_get_thread_num()].search(starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second, for_node_enumerator[omp_get_thread_num()], rev_node_enumerator[omp_get_thread_num()], dbg, i);
+		search[omp_get_thread_num()].search(starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second, 
+			for_node_enumerator[omp_get_thread_num()], rev_node_enumerator[omp_get_thread_num()], dbg, i, term_nodes);
 	}
 
 	return 0;

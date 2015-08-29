@@ -4,6 +4,7 @@
 #include "most_probable_path.h"
 #include "hmmer3b_parser.h"
 #include "succinct_dbg.h"
+#include "hash_map.h"
 #include <iostream>
 
 using namespace std;
@@ -26,14 +27,17 @@ int main(int argc, char **argv) {
 	MostProbablePath rev_hcost = MostProbablePath(reverse_hmm);
 	NodeEnumerator rev_node_enumerator = NodeEnumerator(reverse_hmm, rev_hcost);
 
-	string starting_kmer = "atggctattaaaaagtataagccaataacaaatggtcgtcgtaat";
-	int starting_state = 0;
-	int count = 0;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count);
+	HashMap<AStarNode, AStarNode> term_nodes;
 
-	// starting_kmer = "aaaaaatcttctgacaaacttatcgttcgtggacgtaagaaaaaa";
-	// starting_state = 261;
-	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
+	int count = 0;
+
+	// string starting_kmer = "atggctattaaaaagtataagccaataacaaatggtcgtcgtaat";
+	// int starting_state = 0;
+	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count);
+
+	string starting_kmer = "CACAAACGTCAATACCGTGTTATCGATTTT";
+	int starting_state = 57;
+	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count, term_nodes);
 
 	// starting_kmer = "ggtaaaaaatcatcagacaaacttatcgttcgtggacgtaagaaa";
 	// starting_state = 260;

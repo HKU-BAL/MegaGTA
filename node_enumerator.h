@@ -29,17 +29,12 @@ private:
 	ProfileHMM *hmm;
 	bool prot_search;
 	MostProbablePath *hcost;
-	// static int dna_map[128];
 
 public:
 	NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost) {
 		hmm = &_hmm;
 		prot_search = _hmm.getAlphabet() == ProfileHMM::protein;
 		hcost = &_hcost;
-		// memset(dna_map, -1, sizeof(dna_map));
-		// for (int i = 0; i < 10; ++i) {
-		// 	dna_map["ACGTNacgtn"[i]] = "1234312343"[i] - '0';
-		// }
 	};
 	~NodeEnumerator() {};
 	vector<AStarNode> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg) {
@@ -107,7 +102,6 @@ public:
 	    	}
 
 	    	//translate to aa
-	    	// set<char> aa;
 	    	for (int i = 0; i < 64; ++i) {
 	    		if (codons[i].size() == 3) {
 	    			next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);

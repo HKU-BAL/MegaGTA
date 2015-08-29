@@ -1,6 +1,6 @@
 /**
  * @file hash_table.h
- * @brief HashTable Class.
+ * @brief HashTableSingleThread Class.
  * @author Yu Peng (ypeng@cs.hku.hk)
  * @modified by Huang Yukun, disable openmp parallel
  * @version 1.0.0
@@ -26,27 +26,27 @@
 
 
 template <typename T>
-struct HashTableNode
+struct HashTableSingleThreadNode
 {
-    HashTableNode<T> *next;
+    HashTableSingleThreadNode<T> *next;
     T value;
 };
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTable;
+class HashTableSingleThread;
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableIterator;
+class HashTableSingleThreadIterator;
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableConstIterator;
+class HashTableSingleThreadConstIterator;
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableIterator
+class HashTableSingleThreadIterator
 {
 public:
     typedef Key key_type;
@@ -55,14 +55,14 @@ public:
     typedef const value_type *const_pointer;
     typedef value_type &reference;
     typedef const value_type &const_reference;
-    typedef HashTableNode<value_type> node_type;
-    typedef HashTable<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
+    typedef HashTableSingleThreadNode<value_type> node_type;
+    typedef HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
     typedef std::forward_iterator_tag iterator_category;
-    typedef HashTableIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
+    typedef HashTableSingleThreadIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
 
-    HashTableIterator(const hash_table_type *owner = NULL, node_type *current = NULL)
+    HashTableSingleThreadIterator(const hash_table_type *owner = NULL, node_type *current = NULL)
         : owner_(owner), current_(current) {}
-    HashTableIterator(const iterator &iter)
+    HashTableSingleThreadIterator(const iterator &iter)
         : owner_(iter.owner_), current_(iter.current_) {}
 
     const iterator &operator =(const iterator &iter)
@@ -104,7 +104,7 @@ private:
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableConstIterator
+class HashTableSingleThreadConstIterator
 {
 public:
     typedef Key key_type;
@@ -113,14 +113,14 @@ public:
     typedef const value_type *const_pointer;
     typedef value_type &reference;
     typedef const value_type &const_reference;
-    typedef HashTableNode<value_type> node_type;
-    typedef HashTable<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
+    typedef HashTableSingleThreadNode<value_type> node_type;
+    typedef HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
     typedef std::forward_iterator_tag iterator_category;
-    typedef HashTableConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
+    typedef HashTableSingleThreadConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
 
-    HashTableConstIterator(const hash_table_type *owner = NULL, const node_type *current = NULL)
+    HashTableSingleThreadConstIterator(const hash_table_type *owner = NULL, const node_type *current = NULL)
         : owner_(owner), current_(current) {}
-    HashTableConstIterator(const const_iterator &iter)
+    HashTableSingleThreadConstIterator(const const_iterator &iter)
         : owner_(iter.owner_), current_(iter.current_) {}
 
     const const_iterator &operator =(const const_iterator &iter)
@@ -172,7 +172,7 @@ private:
  */
 template <typename Value, typename Key, typename HashFunc = Hash<Key>, 
          typename ExtractKey = GetKey<Key, Value>, typename EqualKey = std::equal_to<Key> >
-class HashTable
+class HashTableSingleThread
 {
 public:
     typedef Key key_type;
@@ -189,29 +189,29 @@ public:
     typedef ExtractKey get_key_func_type;
     typedef EqualKey key_equal_func_type;
 
-    typedef HashTableNode<value_type> node_type;
-    typedef HashTable<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
-    typedef HashTableIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
-    typedef HashTableConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
+    typedef HashTableSingleThreadNode<value_type> node_type;
+    typedef HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
+    typedef HashTableSingleThreadIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
+    typedef HashTableSingleThreadConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
     typedef Pool<node_type> pool_type;
 
-    friend class HashTableIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
-    friend class HashTableConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
+    friend class HashTableSingleThreadIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
+    friend class HashTableSingleThreadConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
 
     template <typename Value_, typename Key_, typename HashFunc_,
              typename ExtractKey_, typename EqualKey_>
     friend std::ostream &operator <<(std::ostream &os, 
-            HashTable<Value_, Key_, HashFunc_, ExtractKey_, EqualKey_> &hash_table);
+            HashTableSingleThread<Value_, Key_, HashFunc_, ExtractKey_, EqualKey_> &hash_table);
 
     template <typename Value_, typename Key_, typename HashFunc_,
              typename ExtractKey_, typename EqualKey_>
     friend std::istream &operator >>(std::istream &os, 
-            HashTable<Value_, Key_, HashFunc_, ExtractKey_, EqualKey_> &hash_table);
+            HashTableSingleThread<Value_, Key_, HashFunc_, ExtractKey_, EqualKey_> &hash_table);
 
     static const uint64_t kNumBucketLocks = (1 << 12);
     static const uint64_t kDefaultNumBuckets = (1 << 12);
 
-    explicit HashTable(const hash_func_type &hash = hash_func_type(),
+    explicit HashTableSingleThread(const hash_func_type &hash = hash_func_type(),
             const get_key_func_type &get_key = get_key_func_type(),
             const key_equal_func_type &key_equal = key_equal_func_type())
         : hash_(hash), get_key_(get_key), key_equal_(key_equal)
@@ -224,7 +224,7 @@ public:
         rehash(kDefaultNumBuckets); 
     }
 
-    HashTable(const hash_table_type &hash_table)
+    HashTableSingleThread(const hash_table_type &hash_table)
         : hash_(hash_table.hash_),
         get_key_(hash_table.get_key_),
         key_equal_(hash_table.key_equal_)
@@ -238,7 +238,7 @@ public:
         assign(hash_table);
     }
 
-    ~HashTable()
+    ~HashTableSingleThread()
     {
         clear();
         for (uint64_t i = 0; i < bucket_locks_.size(); ++i)
@@ -580,7 +580,7 @@ private:
     void rehash(uint64_t new_num_buckets)
     {
         if ((new_num_buckets & (new_num_buckets-1)) != 0)
-            throw std::logic_error("HashTable::rehash() invalid number of buckets");
+            throw std::logic_error("HashTableSingleThread::rehash() invalid number of buckets");
 
         if (new_num_buckets == buckets_.size())
             return;
@@ -645,7 +645,7 @@ private:
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
 std::istream &operator >>(std::istream &is, 
-        HashTable<Value, Key, HashFunc, ExtractKey, EqualKey> &hash_table)
+        HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> &hash_table)
 {
     hash_table.clear();
     Value value;
@@ -657,9 +657,9 @@ std::istream &operator >>(std::istream &is,
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
 std::ostream &operator <<(std::ostream &os, 
-        HashTable<Value, Key, HashFunc, ExtractKey, EqualKey> &hash_table)
+        HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> &hash_table)
 {
-    typename HashTable<Value, Key, HashFunc, ExtractKey, EqualKey>::iterator iter;
+    typename HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey>::iterator iter;
     for (iter = hash_table.begin(); iter != hash_table.end(); ++iter)
     {
         os.write((char *)&*iter, sizeof(Value));
@@ -671,8 +671,8 @@ namespace std
 {
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-inline void swap(HashTable<Value, Key, HashFunc, ExtractKey, EqualKey> &x,
-     HashTable<Value, Key, HashFunc, ExtractKey, EqualKey> &y)
+inline void swap(HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> &x,
+     HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> &y)
 { x.swap(y); }
 }
 

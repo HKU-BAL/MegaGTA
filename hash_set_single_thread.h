@@ -1,6 +1,6 @@
 /**
  * @file hash_set.h
- * @brief HashSet Class.
+ * @brief HashSetSingleThread Class.
  * @author Yu Peng (ypeng@cs.hku.hk)
  * @modified by Huang Yukun, disable openmp parallel
  * @version 1.0.0
@@ -20,18 +20,18 @@
 
 /**
  * @brief It is a parallel hash set which has similar interface as stl set.
- * It is implemented based on parallel hash table (HashTable).
+ * It is implemented based on parallel hash table (HashTableSingleThread).
  *
  * @tparam Value
  * @tparam HashFunc
  */
 template <typename Value, typename HashFunc = Hash<Value>,
          typename EqualKey = std::equal_to<Value> >
-class HashSet
+class HashSetSingleThread
 {
 public:
-    typedef HashTable<Value, Value, HashFunc, Identity<Value>, EqualKey> hash_table_type;
-    typedef HashSet<Value, HashFunc, EqualKey> hash_set_type;
+    typedef HashTableSingleThread<Value, Value, HashFunc, Identity<Value>, EqualKey> hash_table_type;
+    typedef HashSetSingleThread<Value, HashFunc, EqualKey> hash_set_type;
 
     typedef typename hash_table_type::key_type key_type;
     typedef typename hash_table_type::value_type value_type;
@@ -50,12 +50,12 @@ public:
     typedef typename hash_table_type::iterator iterator;
     typedef typename hash_table_type::const_iterator const_iterator;
 
-    explicit HashSet(const hash_func_type &hash = hash_func_type(),
+    explicit HashSetSingleThread(const hash_func_type &hash = hash_func_type(),
             const key_equal_func_type key_equal = key_equal_func_type())
         : hash_table_(hash, Identity<value_type>(), key_equal)
     {}
 
-    HashSet(const hash_set_type &hash_set)
+    HashSetSingleThread(const hash_set_type &hash_set)
         : hash_table_(hash_set.hash_table_)
     {}
 
@@ -111,8 +111,8 @@ private:
 namespace std
 {
 template <typename Value, typename HashFunc, typename EqualKey>
-inline void swap(HashSet<Value, HashFunc, EqualKey> &x, 
-        HashSet<Value, HashFunc, EqualKey> &y)
+inline void swap(HashSetSingleThread<Value, HashFunc, EqualKey> &x, 
+        HashSetSingleThread<Value, HashFunc, EqualKey> &y)
 { x.swap(y); }
 }
 

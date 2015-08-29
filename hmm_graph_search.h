@@ -7,6 +7,7 @@
 #include <vector>
 #include "hash_set_single_thread.h"
 #include "hash_map_single_thread.h"
+#include "hash_map.h"
 #include <math.h>
 #include <queue>
 #include "src/sequence/NTSequence.h"
@@ -23,10 +24,10 @@ private:
 	static double exit_probabilities[3000];
 	static int dna_map[128];
 
-	HashMap<AStarNode, AStarNode> term_nodes;
+	// HashMap<AStarNode, AStarNode> term_nodes;
 	deque<AStarNode*> created_nodes;
-	HashSet<AStarNode> closed;
-	HashMap<AStarNode, AStarNode> open_hash;
+	HashSetSingleThread<AStarNode> closed;
+	HashMapSingleThread<AStarNode, AStarNode> open_hash;
 
 public:
 	HMMGraphSearch(int &pruning) : heuristic_pruning(pruning) {};
@@ -40,51 +41,33 @@ public:
 			dna_map["ACGTNacgtn"[i]] = "1234312343"[i] - '0';
 		}
 	}
-	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count) {
-		uint8_t seq[dbg.kmer_k];
-		for (int i = 0; i < dbg.kmer_k; ++i) {
-			seq[i] = dna_map[starting_kmer[i]]; // $->0, A->1, C->2, G->3, T->4
-		}
-		int64_t node_id = dbg.IndexBinarySearch(seq);
-
+	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
+		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMap<AStarNode, AStarNode> &term_nodes) {
 		//right, forward search
 		AStarNode goal_node;
 		string right_max_seq = "", left_max_seq ="";
-		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node, node_id);
-		partialResultFromGoal(goal_node, true, right_max_seq);
+		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node, term_nodes);
+		partialResultFromGoal(goal_node, true, right_max_seq, term_nodes);
 
 		//left, reverse search
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
-		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node, node_id);
-		partialResultFromGoal(goal_node, false, left_max_seq);
+		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node, term_nodes);
+		partialResultFromGoal(goal_node, false, left_max_seq, term_nodes);
 		delectAStarNodes();
 		RevComp(left_max_seq);
 
 		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
 	}
-	// void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
-	// 	auto cur_ptr = &goal;
-	// 	max_seq.clear();
-	// 	while (cur_ptr->discovered_from != NULL) {
-	// 		if (cur_ptr->state != 'd') {
-	// 			for (int i = 0; i < 3; ++i) {
-	// 				max_seq.push_back(cur_ptr->nucl_emission[2-i]);
-	// 			}
-	// 		}
-	// 		cur_ptr = cur_ptr->discovered_from;
-	// 	}
-	// 	reverse(max_seq.begin(), max_seq.end());
-	// }
 
-	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
+	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq, HashMap<AStarNode, AStarNode> &term_nodes) {
 		// max_seq.clear();
 		while (goal.discovered_from != NULL) {
 			if (goal.state != 'd') {
-				// for (int i = 0; i < 3; ++i) {
-				// 	max_seq += goal.nucl_emission[2-i];
-				// }
 				max_seq = string(goal.nucl_emission) + max_seq;
 			}
+			pair<AStarNode, AStarNode> pair_to_cache (*goal.discovered_from, goal);
+			// term_nodes.insert(pair_to_cache);
+
 			goal = *goal.discovered_from;
 		}
 		// reverse(max_seq.begin(), max_seq.end());
@@ -107,7 +90,8 @@ public:
 		return ret;
 	}
 
-	bool astarSearch(ProfileHMM &hmm, int &starting_state, string &framed_word, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, AStarNode &goal_node, int64_t node_id) {
+	bool astarSearch(ProfileHMM &hmm, int &starting_state, string &framed_word, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, 
+		AStarNode &goal_node, HashMap<AStarNode, AStarNode> &term_nodes) {
 		string scoring_word;
 		if (!forward) {
 			if (hmm.getAlphabet() == ProfileHMM::protein) {
@@ -122,12 +106,19 @@ public:
 			scoring_word = aa.asString();
 		}
 		NuclKmer kmer;
+		uint8_t seq[dbg.kmer_k];
 		if (!forward) {
 			string rc_frame_word = framed_word;
 			RevComp(rc_frame_word);
 			kmer = NuclKmer(rc_frame_word);
+			for (int i = 0; i < dbg.kmer_k; ++i) {
+				seq[i] = dna_map[rc_frame_word[i]];
+			}
 		} else {
 			kmer = NuclKmer(framed_word);
+			for (int i = 0; i < dbg.kmer_k; ++i) {
+				seq[i] = dna_map[framed_word[i]];
+			}
 		}
 		AStarNode starting_node;
 		if (hmm.getAlphabet() == ProfileHMM::protein) {
@@ -141,12 +132,15 @@ public:
 		starting_node.fval = 0;
 		starting_node.score = scoreStart(hmm, scoring_word, starting_state);
 		starting_node.real_score = realScoreStart(hmm, scoring_word, starting_state);
+		
+		int64_t node_id = dbg.IndexBinarySearch(seq);
 		starting_node.node_id = node_id;
 
-		return astarSearch(hmm, starting_node, dbg, forward, node_enumerator, goal_node);
+		return astarSearch(hmm, starting_node, dbg, forward, node_enumerator, goal_node, term_nodes);
 	}
 
-	bool astarSearch(ProfileHMM &hmm, AStarNode &starting_node, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, AStarNode &goal_node) {
+	bool astarSearch(ProfileHMM &hmm, AStarNode &starting_node, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, 
+		AStarNode &goal_node, HashMap<AStarNode, AStarNode> &term_nodes) {
 		if (starting_node.state_no >= hmm.modelLength()) {
 			goal_node = starting_node;
 			return true;
@@ -164,17 +158,19 @@ public:
 		int pruned_nodes = 0;
 
 		//need to add a cache here
-		HashMap<AStarNode, AStarNode>::iterator got = term_nodes.find(starting_node);
+		HashMap<AStarNode, AStarNode>::iterator got_term_node = term_nodes.find(starting_node);
+		HashMapSingleThread<AStarNode, AStarNode>::iterator got;
 
-		if (got == term_nodes.end()) {
+		if (got_term_node == term_nodes.end()) {
 			for (AStarNode next : node_enumerator.enumerateNodes(starting_node, forward, dbg)) {
 				open.push(next);
 			}
 		} else {
-			for (AStarNode next : node_enumerator.enumerateNodes(starting_node, forward, dbg, &got->second)) {
+			for (AStarNode next : node_enumerator.enumerateNodes(starting_node, forward, dbg, &got_term_node->second)) {
 				open.push(next);
 			}
-		}	
+		}
+
 
 		if (open.empty()) {
 			return false;
@@ -187,7 +183,8 @@ public:
 
 			created_nodes.push_back(curr_ptr);
 			open.pop();
-			HashSet<AStarNode>::iterator iter = closed.find(curr);
+			// cout << "queue size = "<<open.size() << '\n';
+			HashSetSingleThread<AStarNode>::iterator iter = closed.find(curr);
 			if (iter != NULL) {
 				continue;
 			}
@@ -198,7 +195,7 @@ public:
 					inter_goal = curr;
 				}
 				getHighestScoreNode(inter_goal, goal_node);
-				cout << "opened_nodes = " << opened_nodes <<" repeated_nodes = " << repeated_nodes << " replaced_nodes = " << replaced_nodes << " pruned_nodes = " << pruned_nodes << endl;
+				// cout << "opened_nodes = " << opened_nodes <<" repeated_nodes = " << repeated_nodes << " replaced_nodes = " << replaced_nodes << " pruned_nodes = " << pruned_nodes << endl;
 				return true;
 			}
 
@@ -208,11 +205,11 @@ public:
 				inter_goal = curr;
 			}
 			vector<AStarNode> temp_nodes_to_open;
-			got = term_nodes.find(curr);
-			if (got == term_nodes.end()) {
+			got_term_node = term_nodes.find(curr);
+			if (got_term_node == term_nodes.end()) {
 				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg);
 			} else {
-				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg, &got->second);
+				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg, &got_term_node->second);
 			}
 			for (AStarNode &next : temp_nodes_to_open) {
 				bool open_node = false;
