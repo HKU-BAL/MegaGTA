@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	setvbuf ( stdout , NULL , _IOLBF , 1024 );
+	// setvbuf ( stdout , NULL , _IOLBF , 1024 );
 
 	int heuristic_pruning = 20;
 	NuclKmer::setUp();

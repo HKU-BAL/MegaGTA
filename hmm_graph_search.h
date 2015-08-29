@@ -45,7 +45,6 @@ public:
 		for (int i = 0; i < dbg.kmer_k; ++i) {
 			seq[i] = dna_map[starting_kmer[i]]; // $->0, A->1, C->2, G->3, T->4
 		}
-		// starting_node.node_id = dbg.IndexBinarySearch(seq);
 		int64_t node_id = dbg.IndexBinarySearch(seq);
 
 		//right, forward search
@@ -53,20 +52,15 @@ public:
 		string right_max_seq = "", left_max_seq ="";
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node, node_id);
 		partialResultFromGoal(goal_node, true, right_max_seq);
-		// printf("%s\n", right_max_seq.c_str());
 
 		//left, reverse search
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
 		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node, node_id);
-		// printf("%dfuck1\n", count);
 		partialResultFromGoal(goal_node, false, left_max_seq);
-		// printf("%dfuck2\n", count);
 		delectAStarNodes();
 		RevComp(left_max_seq);
 
-		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
-		
-		// printf("%s%s%s\n", left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());
+		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
 	}
 	// void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq) {
 	// 	auto cur_ptr = &goal;
@@ -147,14 +141,6 @@ public:
 		starting_node.fval = 0;
 		starting_node.score = scoreStart(hmm, scoring_word, starting_state);
 		starting_node.real_score = realScoreStart(hmm, scoring_word, starting_state);
-
-
-		//this can be further simplify
-		// uint8_t seq[dbg.kmer_k];
-		// for (int i = 0; i < dbg.kmer_k; ++i) {
-		// 	seq[i] = dna_map[framed_word[i]]; // $->0, A->1, C->2, G->3, T->4
-		// }
-		// starting_node.node_id = dbg.IndexBinarySearch(seq);
 		starting_node.node_id = node_id;
 
 		return astarSearch(hmm, starting_node, dbg, forward, node_enumerator, goal_node);
@@ -212,6 +198,7 @@ public:
 					inter_goal = curr;
 				}
 				getHighestScoreNode(inter_goal, goal_node);
+				cout << "opened_nodes = " << opened_nodes <<" repeated_nodes = " << repeated_nodes << " replaced_nodes = " << replaced_nodes << " pruned_nodes = " << pruned_nodes << endl;
 				return true;
 			}
 
@@ -260,7 +247,7 @@ public:
 				if (open_node) {
 					pair<AStarNode, AStarNode> pair_insert (next, next);
 					open_hash.insert(pair_insert);
-					open_node++;
+					opened_nodes++;
 					open.push(next);
 				}
 			}

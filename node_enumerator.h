@@ -70,13 +70,6 @@ public:
 		}
 		double max_match_emission = hmm->getMaxMatchEmission(next_state);
 
-		// uint8_t seq[dbg.kmer_k];
-		// string buf = curr.kmer.decodePacked();
-		// for (int i = 0; i < dbg.kmer_k; ++i) {
-		// 	seq[i] = dna_map[buf[i]]; // $->0, A->1, C->2, G->3, T->4
-		// }
-		// int64_t node_id = dbg.IndexBinarySearch(seq);
-
 		if (curr.node_id == -1) {
 	    	return ret;
 	    } else {
@@ -127,6 +120,10 @@ public:
 	    				continue;
 	    			}
 
+	    			if (child_node != NULL && !child_node->kmer.equals(next_kmer)) {
+	    				continue;
+	    			}
+
 					next = AStarNode(&curr, next_kmer, next_state, 'm');
 		    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
 		    		if (next.real_score >= curr.max_score) {
@@ -148,7 +145,14 @@ public:
 
 		    		next.node_id = ids[i][2];
 
-		    		ret.push_back(next);
+		    		if (child_node != NULL && *child_node == next) {
+		    			ret.push_back(next);
+		    			return ret;
+		    		} else {
+		    			ret.push_back(next);
+		    		}
+
+		    		// ret.push_back(next);
 
 		    		//insert node
 		    		if (curr.state != 'd') {
@@ -168,7 +172,14 @@ public:
 
 			    		next.node_id = ids[i][2];
 
-			    		ret.push_back(next);
+			    		if (child_node != NULL && *child_node == next) {
+			    			ret.push_back(next);
+			    			return ret;
+			    		} else {
+			    			ret.push_back(next);
+			    		}
+
+			    		// ret.push_back(next);
 		    		}
 	    		}
 	    	}
@@ -191,7 +202,14 @@ public:
 
 	    		next.node_id = curr.node_id;
 
-	    		ret.push_back(next);
+	    		if (child_node != NULL && *child_node == next) {
+	    			ret.push_back(next);
+	    			return ret;
+	    		} else {
+	    			ret.push_back(next);
+	    		}
+
+	    		// ret.push_back(next);
 	    	}
 	    }
 	    return ret;
