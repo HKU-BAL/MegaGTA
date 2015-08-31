@@ -8,25 +8,25 @@ using namespace std;
 class AStarNode
 {
 public:
-	bool partial = true;
+	int partial : 2;
 	AStarNode *discovered_from;
-	NuclKmer kmer;
-	char nucl_emission[3];
+	NuclKmer kmer; //128 bits
+	int nucl_emission : 9;
 	double score;
 	char state;
-	int state_no;
+	int16_t state_no;
 	int fval;
 	double this_node_score;
-	int indels;
+	int16_t indels;
 	double real_score;
-	int length;
+	int16_t length;
 	char emission;
 	int64_t node_id;
 
-	int negative_count = 0;
+	int16_t negative_count = 0;
 	double max_score = 0;
 
-	AStarNode() : discovered_from(NULL) { nucl_emission[0] = nucl_emission[1] = nucl_emission[2] = 'a'; };
+	AStarNode() : discovered_from(NULL) {nucl_emission = 0; partial = 0;};
 	AStarNode(AStarNode *discovered_from, NuclKmer &kmer, int state_no, char state)
 	: discovered_from(discovered_from), kmer(kmer), state_no(state_no), state(state) {};
 	// ~AStarNode();

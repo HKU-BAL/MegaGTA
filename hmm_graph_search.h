@@ -61,11 +61,15 @@ public:
 
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq, HashMap<AStarNode, AStarNode> &term_nodes) {
 		// max_seq.clear();
+		int nucl_emission_mask = 0x7;
 		while (goal.discovered_from != NULL) {
 			if (goal.state != 'd') {
-				max_seq = string(goal.nucl_emission) + max_seq;
+				// max_seq = string(goal.nucl_emission) + max_seq;
+				for (int i = 0; i < 3; i++) {
+					max_seq = "acgt-"[(goal.nucl_emission >> 3*i) & nucl_emission_mask] + max_seq;
+				}
 			}
-			pair<AStarNode, AStarNode> pair_to_cache (*goal.discovered_from, goal);
+			// pair<AStarNode, AStarNode> pair_to_cache (*goal.discovered_from, goal);
 			// term_nodes.insert(pair_to_cache);
 
 			goal = *goal.discovered_from;
@@ -162,11 +166,11 @@ public:
 		HashMapSingleThread<AStarNode, AStarNode>::iterator got;
 
 		if (got_term_node == term_nodes.end()) {
-			for (AStarNode next : node_enumerator.enumerateNodes(starting_node, forward, dbg)) {
+			for (AStarNode &next : node_enumerator.enumerateNodes(starting_node, forward, dbg)) {
 				open.push(next);
 			}
 		} else {
-			for (AStarNode next : node_enumerator.enumerateNodes(starting_node, forward, dbg, &got_term_node->second)) {
+			for (AStarNode &next : node_enumerator.enumerateNodes(starting_node, forward, dbg, &got_term_node->second)) {
 				open.push(next);
 			}
 		}
@@ -189,7 +193,7 @@ public:
 				continue;
 			}
 			if (curr.state_no >= hmm.modelLength()) {
-				curr.partial = false;
+				curr.partial = 0;
 				if ((curr.real_score + exit_probabilities[curr.length]) / log(2) 
 						> (inter_goal.real_score + exit_probabilities[inter_goal.length]) / log(2)) {
 					inter_goal = curr;
@@ -250,7 +254,7 @@ public:
 			}
 		}
 
-		inter_goal.partial = true;
+		inter_goal.partial = 1;
 		getHighestScoreNode(inter_goal, goal_node);
 		return true;
 	}
@@ -284,6 +288,7 @@ public:
 			case 't': return 'a';
 			case 'N':
 			case 'n': return 'n';
+			case '-': return '-';
 			default: assert(false);
 		}
 	}

@@ -127,9 +127,9 @@ public:
 		    			next.max_score = curr.max_score;
 		    			next.negative_count = curr.negative_count + 1;
 		    		}
-		    		for (int j = 0; j < 3; j++) {
-		    			next.nucl_emission[j] = "acgt"[codons[i][j]];
-		    		}
+
+		    		next.nucl_emission = codons[i][0] << 6 | codons[i][1] << 3 | codons[i][2];
+		    		
 		    		next.emission = emission;
 		    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
 		    		next.length = curr.length + 1;
@@ -154,9 +154,9 @@ public:
 			    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
 			    		next.max_score = curr.max_score;
 			    		next.negative_count = curr.negative_count + 1;
-			    		for (int j = 0; j < 3; j++) {
-			    			next.nucl_emission[j] = "acgt"[codons[i][j]];
-			    		}
+
+			    		next.nucl_emission = codons[i][0] << 6 | codons[i][1] << 3 | codons[i][2];
+
 			    		next.emission = emission;
 			    		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
 			    		next.length = curr.length + 1;
@@ -184,9 +184,8 @@ public:
 	    		next.real_score = curr.real_score + del_trans;
 	    		next.max_score = curr.max_score;
 	    		next.negative_count = curr.negative_count + 1;
-	    		for (int j = 0; j < 3; j++) {
-	    			next.nucl_emission[j] = '-';
-	    		}
+
+	    		next.nucl_emission = 4 << 6 | 4 << 3 | 4;
 	    		next.emission = '-';
 	    		next.this_node_score = del_trans - max_match_emission;
 	    		next.length = curr.length;
