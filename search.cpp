@@ -21,10 +21,11 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
+	// omp_set_num_threads(1);
+
 	// setvbuf ( stdout , NULL , _IOLBF , 1024 );
 
 	int heuristic_pruning = 20;
-	NuclKmer::setUp();
 	HMMGraphSearch::setUp();
 	SuccinctDBG dbg;
 	dbg.LoadFromMultiFile(argv[1], false);
@@ -60,9 +61,9 @@ int main(int argc, char **argv) {
 		rev_node_enumerator.push_back(NodeEnumerator(reverse_hmm, rev_hcost));
 	}
 
-	HashMap<AStarNode, AStarNode> term_nodes;
+	HashMapSingleThread<AStarNode, AStarNode> term_nodes;
 	
-		#pragma omp parallel for schedule(dynamic, 1)
+	#pragma omp parallel for
 	for (int i = 0; i < starting_kmer_storage.size(); ++i) {
 		search[omp_get_thread_num()].search(starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second, 
 			for_node_enumerator[omp_get_thread_num()], rev_node_enumerator[omp_get_thread_num()], dbg, i, term_nodes);

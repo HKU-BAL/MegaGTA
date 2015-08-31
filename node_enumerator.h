@@ -3,7 +3,7 @@
 
 #include "profile_hmm.h"
 #include "most_probable_path.h"
-#include "nucl_kmer.h"
+// #include "nucl_kmer.h"
 #include "succinct_dbg.h"
 #include "a_star_node.h"
 #include <iostream>
@@ -24,7 +24,7 @@ private:
 	double match_trans;
 	double ins_trans;
 	double del_trans;
-	NuclKmer next_kmer;
+	// NuclKmer next_kmer;
 	int next_state;
 	ProfileHMM *hmm;
 	bool prot_search;
@@ -104,7 +104,7 @@ public:
 	    	//translate to aa
 	    	for (int i = 0; i < 64; ++i) {
 	    		if (codons[i].size() == 3) {
-	    			next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
+	    			// next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
 	    			if (!forward) {
 	    				emission = Codon::rc_codonTable[codons[i][0]][codons[i][1]][codons[i][2]];
 	    			} else {
@@ -114,11 +114,11 @@ public:
 	    				continue;
 	    			}
 
-	    			if (child_node != NULL && !child_node->kmer.equals(next_kmer)) {
+	    			if (child_node != NULL && !child_node->node_id == ids[i][2]) {
 	    				continue;
 	    			}
 
-					next = AStarNode(&curr, next_kmer, next_state, 'm');
+					next = AStarNode(&curr, next_state, 'm');
 		    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
 		    		if (next.real_score >= curr.max_score) {
 		    			next.max_score = next.real_score;
@@ -150,12 +150,12 @@ public:
 
 		    		//insert node
 		    		if (curr.state != 'd') {
-		    			next = AStarNode(&curr, next_kmer, curr.state_no, 'i');
+		    			next = AStarNode(&curr, curr.state_no, 'i');
 			    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
 			    		next.max_score = curr.max_score;
 			    		next.negative_count = curr.negative_count + 1;
 
-			    		next.nucl_emission = codons[i][0] << 6 | codons[i][1] << 3 | codons[i][2];
+			    		next.nucl_emission = (codons[i][0] << 6) | (codons[i][1] << 3) | codons[i][2];
 
 			    		next.emission = emission;
 			    		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
@@ -180,12 +180,12 @@ public:
 
 	    	//delete node
 	    	if (curr.state != 'i') {
-	    		next = AStarNode(&curr, curr.kmer, next_state, 'd');
+	    		next = AStarNode(&curr, next_state, 'd');
 	    		next.real_score = curr.real_score + del_trans;
 	    		next.max_score = curr.max_score;
 	    		next.negative_count = curr.negative_count + 1;
 
-	    		next.nucl_emission = 4 << 6 | 4 << 3 | 4;
+	    		next.nucl_emission = (4 << 6) | (4 << 3) | 4;
 	    		next.emission = '-';
 	    		next.this_node_score = del_trans - max_match_emission;
 	    		next.length = curr.length;

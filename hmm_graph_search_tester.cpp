@@ -10,7 +10,7 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-	NuclKmer::setUp();
+	// NuclKmer::setUp();
 	HMMGraphSearch::setUp();
 	int pruning = 20;
 	HMMGraphSearch search = HMMGraphSearch(pruning);
@@ -35,13 +35,13 @@ int main(int argc, char **argv) {
 	// int starting_state = 0;
 	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count);
 
-	string starting_kmer = "CACAAACGTCAATACCGTGTTATCGATTTT";
-	int starting_state = 57;
-	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count, term_nodes);
+	// string starting_kmer = "CACAAACGTCAATACCGTGTTATCGATTTT";
+	// int starting_state = 57;
+	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count, term_nodes);
 
-	// starting_kmer = "ggtaaaaaatcatcagacaaacttatcgttcgtggacgtaagaaa";
-	// starting_state = 260;
-	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg);
+	string starting_kmer = "ACAAAACCTGAAAAGTCATTATTACAACCG";
+	int starting_state = 26;
+	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count, term_nodes);
 
 	// starting_kmer = "cgtggtaaaaaatcatcagacaaacttatcgttcgtggacgtaag";
 	// starting_state = 259;

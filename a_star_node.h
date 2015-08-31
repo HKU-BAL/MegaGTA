@@ -1,7 +1,8 @@
 #ifndef A_STAR_NODE_H__
 #define A_STAR_NODE_H__
 
-#include "nucl_kmer.h"
+// #include "nucl_kmer.h"
+#include "city.h"
 
 using namespace std;
 
@@ -10,7 +11,6 @@ class AStarNode
 public:
 	int partial : 2;
 	AStarNode *discovered_from;
-	NuclKmer kmer; //128 bits
 	int nucl_emission : 9;
 	double score;
 	char state;
@@ -27,8 +27,8 @@ public:
 	double max_score = 0;
 
 	AStarNode() : discovered_from(NULL) {nucl_emission = 0; partial = 0;};
-	AStarNode(AStarNode *discovered_from, NuclKmer &kmer, int state_no, char state)
-	: discovered_from(discovered_from), kmer(kmer), state_no(state_no), state(state) {};
+	AStarNode(AStarNode *discovered_from, int state_no, char state)
+	: discovered_from(discovered_from), state_no(state_no), state(state) {};
 	// ~AStarNode();
 	bool operator< (const AStarNode &node2) const {
 		if (fval < node2.fval) {
@@ -62,7 +62,7 @@ public:
 		}
 	}
 	bool operator== (const AStarNode &node2) const {
-		if (!(kmer == node2.kmer)) {
+		if (!(node_id == node2.node_id)) {
 			return false;
 		}
 		if (state != node2.state) {
@@ -75,7 +75,8 @@ public:
 	}
 
 	uint64_t hash() const {
-		return CityHash64((const char*)kmer.kmers, sizeof(kmer.kmers[0]) * 2) + state + state_no;
+		int64_t h = (node_id << 16) | (state_no << 2) | state;
+		return CityHash64((char*)&h, sizeof(h));
 	}
 };
 
