@@ -45,19 +45,15 @@ public:
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
 		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
 		//right, forward search
-		AStarNode goal_node;
+		AStarNode goal_node, goal_node2;
 		string right_max_seq = "", left_max_seq ="";
-		// printf("before right %p\n", goal_node.discovered_from);
 		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node, term_nodes);
-		// printf("after right %p\n", goal_node.discovered_from);
 		partialResultFromGoal(goal_node, true, right_max_seq, term_nodes);
 
 		//left, reverse search
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
-		// printf("before left %p\n", goal_node.discovered_from);
-		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node, term_nodes);
-		// printf("after left %p\n", goal_node.discovered_from);
-		partialResultFromGoal(goal_node, false, left_max_seq, term_nodes);
+		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node2, term_nodes);
+		partialResultFromGoal(goal_node2, false, left_max_seq, term_nodes);
 		delectAStarNodes();
 		RevComp(left_max_seq);
 

@@ -27,7 +27,7 @@ int main(int argc, char **argv) {
 	MostProbablePath rev_hcost = MostProbablePath(reverse_hmm);
 	NodeEnumerator rev_node_enumerator = NodeEnumerator(reverse_hmm, rev_hcost);
 
-	HashMap<AStarNode, AStarNode> term_nodes;
+	HashMapSingleThread<AStarNode, AStarNode> term_nodes;
 
 	int count = 0;
 
@@ -39,8 +39,8 @@ int main(int argc, char **argv) {
 	// int starting_state = 57;
 	// search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count, term_nodes);
 
-	string starting_kmer = "ACAAAACCTGAAAAGTCATTATTACAACCG";
-	int starting_state = 26;
+	string starting_kmer = "AAGCGCCTCTACCGCGTCATCGACTTCAAG";
+	int starting_state = 58;
 	search.search(starting_kmer, forward_hmm, reverse_hmm, starting_state, for_node_enumerator, rev_node_enumerator, dbg, count, term_nodes);
 
 	// starting_kmer = "cgtggtaaaaaatcatcagacaaacttatcgttcgtggacgtaag";
