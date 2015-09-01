@@ -20,7 +20,7 @@
 #include <ostream>
 #include <stdexcept>
 
-#include "pool.h"
+#include "pool_st.h"
 #include "hash.h"
 #include "functional.h"
 
@@ -193,7 +193,7 @@ public:
     typedef HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
     typedef HashTableSingleThreadIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
     typedef HashTableSingleThreadConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
-    typedef Pool<node_type> pool_type;
+    typedef PoolST<node_type> pool_type;
 
     friend class HashTableSingleThreadIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
     friend class HashTableSingleThreadConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
@@ -635,7 +635,7 @@ private:
     get_key_func_type get_key_;
     key_equal_func_type key_equal_;
 
-    Pool<node_type> pool_;
+    PoolST<node_type> pool_;
     std::vector<node_type *> buckets_;
     std::vector<omp_lock_t> bucket_locks_;
     omp_lock_t rehash_lock_;

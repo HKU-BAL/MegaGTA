@@ -7,6 +7,7 @@
 #include <vector>
 #include "hash_set_single_thread.h"
 #include "hash_map_single_thread.h"
+#include "pool_st.h"
 #include "hash_map.h"
 #include <math.h>
 #include <queue>
@@ -54,7 +55,7 @@ public:
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
 		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node2, term_nodes);
 		partialResultFromGoal(goal_node2, false, left_max_seq, term_nodes);
-		delectAStarNodes();
+		deleteAStarNodes();
 		RevComp(left_max_seq);
 
 		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
@@ -288,7 +289,7 @@ public:
 		}
 	}
 
-	void delectAStarNodes() {
+	void deleteAStarNodes() {
 		for (auto ptr : created_nodes) {
 			delete ptr;
 		}
