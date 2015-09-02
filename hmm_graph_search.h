@@ -26,7 +26,7 @@ private:
 	static double exit_probabilities[3000];
 	static int dna_map[128];
 
-	// HashMap<AStarNode, AStarNode> term_nodes;
+	// HashMapSingleThread<AStarNode, AStarNode> term_nodes;
 	HashSetSingleThread<AStarNodePtr> closed;
 	HashMapSingleThread<AStarNodePtr, AStarNodePtr> open_hash;
 
@@ -56,7 +56,7 @@ public:
 		}
 	}
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
-		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMap<AStarNode, AStarNode> &term_nodes) {
+		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
 		//right, forward search
 		AStarNode *goal_node = pool_->construct(), *goal_node2 = pool_->construct();
 		string right_max_seq = "", left_max_seq ="";
@@ -73,12 +73,12 @@ public:
 		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
 	}
 
-	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq, HashMap<AStarNode, AStarNode> &term_nodes) {
+	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
 		int nucl_emission_mask = 0x7;
 		auto ptr = &goal;
 		max_seq.clear();
 
-		// static volatile int lock_ = 0;
+		static volatile int lock_ = 0;
 
 		while (ptr->discovered_from != NULL) {
 			// printf("in while %p\n", ptr->discovered_from);
@@ -89,9 +89,9 @@ public:
 			}
 			pair<AStarNode, AStarNode> pair_to_cache (*(ptr->discovered_from), *ptr);
 
-			// while (__sync_lock_test_and_set(&lock_, 1)) while (lock_);
+			while (__sync_lock_test_and_set(&lock_, 1)) while (lock_);
 			term_nodes.insert(pair_to_cache);
-			// __sync_lock_release(&lock_);
+			__sync_lock_release(&lock_);
 
 			ptr = ptr->discovered_from;
 		}
@@ -116,7 +116,7 @@ public:
 	}
 
 	bool astarSearch(ProfileHMM &hmm, int &starting_state, string &framed_word, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, 
-		AStarNode &goal_node, HashMap<AStarNode, AStarNode> &term_nodes) {
+		AStarNode &goal_node, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
 		string scoring_word;
 		if (!forward) {
 			if (hmm.getAlphabet() == ProfileHMM::protein) {
@@ -167,7 +167,7 @@ public:
 	}
 
 	bool astarSearch(ProfileHMM &hmm, AStarNode &starting_node, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, 
-		AStarNode &goal_node, HashMap<AStarNode, AStarNode> &term_nodes) {
+		AStarNode &goal_node, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
 		if (starting_node.state_no >= hmm.modelLength()) {
 			goal_node = starting_node;
 			return true;
@@ -186,7 +186,7 @@ public:
 		int pruned_nodes = 0;
 
 		//need to add a cache here
-		HashMap<AStarNode, AStarNode>::iterator got_term_node = term_nodes.find(starting_node);
+		HashMapSingleThread<AStarNode, AStarNode>::iterator got_term_node = term_nodes.find(starting_node);
 		HashMapSingleThread<AStarNodePtr, AStarNodePtr>::iterator got;
 
 		// printf("curr state: %c\n", starting_node.state);

@@ -17,11 +17,17 @@ using namespace std;
 
 int main(int argc, char **argv) {
 	if (argc < 5) {
-		fprintf(stderr, "Usage: %s <succinct_dbg> <forward_hmm> <reverse_hmm> <starting_kmers>\n", argv[0]);
+		fprintf(stderr, "Usage: %s <succinct_dbg> <forward_hmm> <reverse_hmm> <starting_kmers> [num_threads=0]\n", argv[0]);
 		exit(1);
 	}
 
-	int num_threads = 1;// omp_get_max_threads();
+	int num_threads = 0;
+	if (argc > 5) {
+		num_threads = atoi(argv[5]);
+	}
+	if (num_threads == 0) {
+		num_threads = omp_get_max_threads();
+	}
 	omp_set_num_threads(num_threads);
 
 	// setvbuf ( stdout , NULL , _IOLBF , 1024 );
@@ -66,7 +72,7 @@ int main(int argc, char **argv) {
 		search[i].constructPool();
 	}
 
-	HashMap<AStarNode, AStarNode> term_nodes;
+	HashMapSingleThread<AStarNode, AStarNode> term_nodes;
 	
 	#pragma omp parallel for
 	for (int i = 0; i < starting_kmer_storage.size(); ++i) {
