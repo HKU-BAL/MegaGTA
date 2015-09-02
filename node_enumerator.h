@@ -27,6 +27,7 @@ private:
 	ProfileHMM *hmm;
 	bool prot_search;
 	MostProbablePath *hcost;
+	AStarNode next;
 
 public:
 	NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost) {
@@ -35,12 +36,11 @@ public:
 		hcost = &_hcost;
 	};
 	~NodeEnumerator() {};
-	vector<AStarNodePtr> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg, PoolST<AStarNode> &pool) {
-		return enumerateNodes(curr, forward, dbg, pool, NULL);
+	void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg) {
+		enumerateNodes(ret, curr, forward, dbg, NULL);
 	}
-	vector<AStarNodePtr> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg, PoolST<AStarNode> &pool, AStarNode *child_node) {
-		vector<AStarNodePtr> ret;
-
+	void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg, AStarNode *child_node) {
+		ret.clear();
 		next_state = curr.state_no + 1;
 		switch (curr.state) {
 			case 'm':
@@ -64,7 +64,7 @@ public:
 		double max_match_emission = hmm->getMaxMatchEmission(next_state);
 
 		if (curr.node_id == -1) {
-	    	return ret;
+	    	return;
 	    } else {
 	    	int64_t next_node[4], next_node_2[4], next_node_3[4];
 	    	vector<int64_t> packed_codon;
@@ -102,9 +102,7 @@ public:
     				continue;
     			}
 
-    			auto next_ptr = pool.construct();
-    			auto &next = *next_ptr;
-				next = AStarNode(&curr, next_state, 'm');
+    			next = AStarNode(&curr, next_state, 'm');
 
 	    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
 	    		if (next.real_score >= curr.max_score) {
@@ -127,18 +125,16 @@ public:
 	    		next.node_id = packed >> 16;
 
 	    		if (child_node != NULL && *child_node == next) {
-	    			ret.push_back(AStarNodePtr(next_ptr));
-	    			return ret;
+	    			ret.push_back(next);
+	    			return;
 	    		} else {
-	    			ret.push_back(AStarNodePtr(next_ptr));
+	    			ret.push_back(next);
 	    		}
 
 	    		// ret.push_back(next);
 
 	    		//insert node
 	    		if (curr.state != 'd') {
-	    			auto next_ptr = pool.construct();
-    				auto &next = *next_ptr;
 	    			next = AStarNode(&curr, curr.state_no, 'i');
 
 		    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
@@ -157,18 +153,16 @@ public:
 		    		next.node_id = packed >> 16;
 
 		    		if (child_node != NULL && *child_node == next) {
-		    			ret.push_back(AStarNodePtr(next_ptr));
-		    			return ret;
+		    			ret.push_back(next);
+		    			return;
 		    		} else {
-		    			ret.push_back(AStarNodePtr(next_ptr));
+		    			ret.push_back(next);
 		    		}
 	    		}
 	    	}
 
 	    	//delete node
 	    	if (curr.state != 'i') {
-	    		auto next_ptr = pool.construct();
-    			auto &next = *next_ptr;
 	    		next = AStarNode(&curr, next_state, 'd');
 
 	    		next.real_score = curr.real_score + del_trans;
@@ -186,16 +180,15 @@ public:
 	    		next.node_id = curr.node_id;
 
 	    		if (child_node != NULL && *child_node == next) {
-	    			ret.push_back(AStarNodePtr(next_ptr));
-	    			return ret;
+	    			ret.push_back(next);
+	    			return;
 	    		} else {
-	    			ret.push_back(AStarNodePtr(next_ptr));
+	    			ret.push_back(next);
 	    		}
 
 	    		// ret.push_back(next);
 	    	}
 	    }
-	    return ret;
 	}
 	
 };
