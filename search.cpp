@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	int num_threads = omp_get_max_threads();
+	int num_threads = 1;// omp_get_max_threads();
 	omp_set_num_threads(num_threads);
 
 	// setvbuf ( stdout , NULL , _IOLBF , 1024 );
@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 		search[i].constructPool();
 	}
 
-	HashMapSingleThread<AStarNode, AStarNode> term_nodes;
+	HashMap<AStarNode, AStarNode> term_nodes;
 	
 	#pragma omp parallel for
 	for (int i = 0; i < starting_kmer_storage.size(); ++i) {

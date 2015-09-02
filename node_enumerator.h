@@ -3,7 +3,6 @@
 
 #include "profile_hmm.h"
 #include "most_probable_path.h"
-// #include "nucl_kmer.h"
 #include "succinct_dbg.h"
 #include "a_star_node.h"
 #include <iostream>

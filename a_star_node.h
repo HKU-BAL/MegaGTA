@@ -94,14 +94,13 @@ public:
 	}
 
 	bool operator== (const AStarNodePtr &rhs) const {
-		return !ptr_ && !rhs.ptr_ &&
-		       ptr_->node_id == rhs.ptr_->node_id &&
+		return ptr_->node_id == rhs.ptr_->node_id &&
 		       ptr_->state == rhs.ptr_->state &&
 		       ptr_->state_no == rhs.ptr_->state_no;
 	}
 
 	bool operator< (const AStarNodePtr &rhs) const {
-		return !ptr_ && !rhs.ptr_ && *ptr_ < *rhs.ptr_;
+		return *ptr_ < *rhs.ptr_;
 	}
 
 	uint64_t hash() const {
