@@ -1,17 +1,15 @@
 /**
  * @file hash_table.h
- * @brief HashTableSingleThread Class.
+ * @brief HashTableST Class.
  * @author Yu Peng (ypeng@cs.hku.hk)
- * @modified by Huang Yukun, disable openmp parallel
  * @version 1.0.0
  * @date 2011-08-03
  */
 
-#ifndef __SINGLETHREAD_CONTAINER_HASH_TABLE_H_
+#ifndef __HASH_TABLE_ST_H_
 
-#define __SINGLETHREAD_CONTAINER_HASH_TABLE_H_
+#define __HASH_TABLE_ST_H_
 
-#include <omp.h>
 #include <stdint.h>
 
 #include <cstddef>
@@ -26,27 +24,27 @@
 
 
 template <typename T>
-struct HashTableSingleThreadNode
+struct HashTableSTNode
 {
-    HashTableSingleThreadNode<T> *next;
+    HashTableSTNode<T> *next;
     T value;
 };
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableSingleThread;
+class HashTableST;
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableSingleThreadIterator;
+class HashTableSTIterator;
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableSingleThreadConstIterator;
+class HashTableSTConstIterator;
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableSingleThreadIterator
+class HashTableSTIterator
 {
 public:
     typedef Key key_type;
@@ -55,14 +53,14 @@ public:
     typedef const value_type *const_pointer;
     typedef value_type &reference;
     typedef const value_type &const_reference;
-    typedef HashTableSingleThreadNode<value_type> node_type;
-    typedef HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
+    typedef HashTableSTNode<value_type> node_type;
+    typedef HashTableST<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
     typedef std::forward_iterator_tag iterator_category;
-    typedef HashTableSingleThreadIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
+    typedef HashTableSTIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
 
-    HashTableSingleThreadIterator(const hash_table_type *owner = NULL, node_type *current = NULL)
+    HashTableSTIterator(const hash_table_type *owner = NULL, node_type *current = NULL)
         : owner_(owner), current_(current) {}
-    HashTableSingleThreadIterator(const iterator &iter)
+    HashTableSTIterator(const iterator &iter)
         : owner_(iter.owner_), current_(iter.current_) {}
 
     const iterator &operator =(const iterator &iter)
@@ -104,7 +102,7 @@ private:
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-class HashTableSingleThreadConstIterator
+class HashTableSTConstIterator
 {
 public:
     typedef Key key_type;
@@ -113,14 +111,14 @@ public:
     typedef const value_type *const_pointer;
     typedef value_type &reference;
     typedef const value_type &const_reference;
-    typedef HashTableSingleThreadNode<value_type> node_type;
-    typedef HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
+    typedef HashTableSTNode<value_type> node_type;
+    typedef HashTableST<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
     typedef std::forward_iterator_tag iterator_category;
-    typedef HashTableSingleThreadConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
+    typedef HashTableSTConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
 
-    HashTableSingleThreadConstIterator(const hash_table_type *owner = NULL, const node_type *current = NULL)
+    HashTableSTConstIterator(const hash_table_type *owner = NULL, const node_type *current = NULL)
         : owner_(owner), current_(current) {}
-    HashTableSingleThreadConstIterator(const const_iterator &iter)
+    HashTableSTConstIterator(const const_iterator &iter)
         : owner_(iter.owner_), current_(iter.current_) {}
 
     const const_iterator &operator =(const const_iterator &iter)
@@ -172,7 +170,7 @@ private:
  */
 template <typename Value, typename Key, typename HashFunc = Hash<Key>, 
          typename ExtractKey = GetKey<Key, Value>, typename EqualKey = std::equal_to<Key> >
-class HashTableSingleThread
+class HashTableST
 {
 public:
     typedef Key key_type;
@@ -189,61 +187,49 @@ public:
     typedef ExtractKey get_key_func_type;
     typedef EqualKey key_equal_func_type;
 
-    typedef HashTableSingleThreadNode<value_type> node_type;
-    typedef HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
-    typedef HashTableSingleThreadIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
-    typedef HashTableSingleThreadConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
+    typedef HashTableSTNode<value_type> node_type;
+    typedef HashTableST<Value, Key, HashFunc, ExtractKey, EqualKey> hash_table_type;
+    typedef HashTableSTIterator<Value, Key, HashFunc, ExtractKey, EqualKey> iterator;
+    typedef HashTableSTConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey> const_iterator;
     typedef PoolST<node_type> pool_type;
 
-    friend class HashTableSingleThreadIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
-    friend class HashTableSingleThreadConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
+    friend class HashTableSTIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
+    friend class HashTableSTConstIterator<Value, Key, HashFunc, ExtractKey, EqualKey>;
 
     template <typename Value_, typename Key_, typename HashFunc_,
              typename ExtractKey_, typename EqualKey_>
     friend std::ostream &operator <<(std::ostream &os, 
-            HashTableSingleThread<Value_, Key_, HashFunc_, ExtractKey_, EqualKey_> &hash_table);
+            HashTableST<Value_, Key_, HashFunc_, ExtractKey_, EqualKey_> &hash_table);
 
     template <typename Value_, typename Key_, typename HashFunc_,
              typename ExtractKey_, typename EqualKey_>
     friend std::istream &operator >>(std::istream &os, 
-            HashTableSingleThread<Value_, Key_, HashFunc_, ExtractKey_, EqualKey_> &hash_table);
+            HashTableST<Value_, Key_, HashFunc_, ExtractKey_, EqualKey_> &hash_table);
 
     static const uint64_t kNumBucketLocks = (1 << 12);
     static const uint64_t kDefaultNumBuckets = (1 << 12);
 
-    explicit HashTableSingleThread(const hash_func_type &hash = hash_func_type(),
+    explicit HashTableST(const hash_func_type &hash = hash_func_type(),
             const get_key_func_type &get_key = get_key_func_type(),
             const key_equal_func_type &key_equal = key_equal_func_type())
         : hash_(hash), get_key_(get_key), key_equal_(key_equal)
     { 
         size_ = 0;
-        omp_init_lock(&rehash_lock_);
-        bucket_locks_.resize(kNumBucketLocks);
-        for (uint64_t i = 0; i < bucket_locks_.size(); ++i)
-            omp_init_lock(&bucket_locks_[i]);
         rehash(kDefaultNumBuckets); 
     }
 
-    HashTableSingleThread(const hash_table_type &hash_table)
+    HashTableST(const hash_table_type &hash_table)
         : hash_(hash_table.hash_),
         get_key_(hash_table.get_key_),
         key_equal_(hash_table.key_equal_)
     {
         size_ = 0;
-        omp_init_lock(&rehash_lock_);
-        bucket_locks_.resize(kNumBucketLocks);
-        for (uint64_t i = 0; i < bucket_locks_.size(); ++i)
-            omp_init_lock(&bucket_locks_[i]);
-
         assign(hash_table);
     }
 
-    ~HashTableSingleThread()
+    ~HashTableST()
     {
         clear();
-        for (uint64_t i = 0; i < bucket_locks_.size(); ++i)
-            omp_destroy_lock(&bucket_locks_[i]);
-        omp_destroy_lock(&rehash_lock_);
     }
 
     const hash_table_type &operator =(const hash_table_type &hash_table)
@@ -257,7 +243,6 @@ public:
         clear();
         rehash(hash_table.buckets_.size());
 
-// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)hash_table.buckets_.size(); ++i)
         {
             node_type *prev = NULL;
@@ -326,7 +311,6 @@ public:
         p->value = value;
         p->next = buckets_[index];
         buckets_[index] = p;
-#pragma omp atomic
         ++size_;
         unlock_bucket(hash_value);
 
@@ -336,17 +320,17 @@ public:
     iterator find(const key_type &key)
     {
         uint64_t hash_value = hash_key(key);
-        // lock_bucket(hash_value);
+        lock_bucket(hash_value);
         uint64_t index = bucket_index_key(key);
         for (node_type *node = buckets_[index]; node; node = node->next)
         {
             if (key_equal_(key, get_key_(node->value)))
             {
-                // unlock_bucket(hash_value);
+                unlock_bucket(hash_value);
                 return iterator(this, node);
             }
         }
-        // unlock_bucket(hash_value);
+        unlock_bucket(hash_value);
         return iterator();
     }
 
@@ -384,7 +368,6 @@ public:
         p->value = value;
         p->next = buckets_[index];
         buckets_[index] = p;
-#pragma omp atomic
         ++size_;
         unlock_bucket(hash_value);
 
@@ -424,7 +407,6 @@ public:
         }
         unlock_bucket(hash_value);
 
-#pragma omp atomic
         size_ -= num_removed_nodes;
 
         return num_removed_nodes;
@@ -434,7 +416,7 @@ public:
     size_type remove_if(const Predicator &predicator)
     {
         uint64_t num_removed_nodes = 0;
-// #pragma omp parallel for
+
         for (int64_t index = 0; index < (int64_t)buckets_.size(); ++index)
         {
             lock_bucket(index);
@@ -454,7 +436,6 @@ public:
                     node = node->next;
                     pool_.destroy(p);
 
-#pragma omp atomic
                     ++num_removed_nodes;
                 }
                 else
@@ -466,7 +447,6 @@ public:
             unlock_bucket(index);
         }
 
-#pragma omp atomic
         size_ -= num_removed_nodes;
 
         return num_removed_nodes;
@@ -475,7 +455,6 @@ public:
     template <typename UnaryProc>
     UnaryProc &for_each(UnaryProc &op)
     {
-// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             for (node_type *node = buckets_[i]; node; node = node->next)
@@ -487,7 +466,6 @@ public:
     template <typename UnaryProc>
     UnaryProc &for_each(UnaryProc &op) const
     {
-// #pragma omp parallel for
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             for (node_type *node = buckets_[i]; node; node = node->next)
@@ -543,7 +521,7 @@ public:
     void clear()
     {
         size_ = 0;
-// #pragma omp parallel for
+
         for (int64_t i = 0; i < (int64_t)buckets_.size(); ++i)
         {
             node_type *node = buckets_[i];
@@ -560,40 +538,34 @@ public:
 
 private:
     void lock_bucket(uint64_t hash_value)
-    { omp_set_lock(&bucket_locks_[hash_value & (kNumBucketLocks-1)]); }
+    { }
     void unlock_bucket(uint64_t hash_value)
-    { omp_unset_lock(&bucket_locks_[hash_value & (kNumBucketLocks-1)]); }
+    { }
 
     void rehash_if_needed(size_type capacity)
     {
         if (capacity > buckets_.size() * 2)
         {
-            omp_set_lock(&rehash_lock_);
             size_type new_num_buckets = buckets_.size();
             while (capacity > new_num_buckets * 2)
                 new_num_buckets *= 2;
             rehash(new_num_buckets);
-            omp_unset_lock(&rehash_lock_);
         }
     }
 
     void rehash(uint64_t new_num_buckets)
     {
         if ((new_num_buckets & (new_num_buckets-1)) != 0)
-            throw std::logic_error("HashTableSingleThread::rehash() invalid number of buckets");
+            throw std::logic_error("HashTableST::rehash() invalid number of buckets");
 
         if (new_num_buckets == buckets_.size())
             return;
-
-        for (uint64_t i = 0; i < bucket_locks_.size(); ++i)
-            omp_set_lock(&bucket_locks_[i]);
 
         std::vector<node_type *> old_buckets(new_num_buckets, NULL);
         old_buckets.swap(buckets_);
 
         if (new_num_buckets > old_buckets.size())
         {
-// #pragma omp parallel for
             for (int64_t i = 0; i < (int64_t)old_buckets.size(); ++i)
             {
                 node_type *node = old_buckets[i];
@@ -609,7 +581,6 @@ private:
         }
         else
         {
-//// #pragma omp parallel for
             for (int64_t i = 0; i < (int64_t)old_buckets.size(); ++i)
             {
                 node_type *node = old_buckets[i];
@@ -626,9 +597,6 @@ private:
                 }
             }
         }
-
-        for (uint64_t i = 0; i < bucket_locks_.size(); ++i)
-            omp_unset_lock(&bucket_locks_[i]);
     }
 
     hash_func_type hash_;
@@ -637,15 +605,13 @@ private:
 
     PoolST<node_type> pool_;
     std::vector<node_type *> buckets_;
-    std::vector<omp_lock_t> bucket_locks_;
-    omp_lock_t rehash_lock_;
     uint64_t size_;
 };
 
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
 std::istream &operator >>(std::istream &is, 
-        HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> &hash_table)
+        HashTableST<Value, Key, HashFunc, ExtractKey, EqualKey> &hash_table)
 {
     hash_table.clear();
     Value value;
@@ -657,9 +623,9 @@ std::istream &operator >>(std::istream &is,
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
 std::ostream &operator <<(std::ostream &os, 
-        HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> &hash_table)
+        HashTableST<Value, Key, HashFunc, ExtractKey, EqualKey> &hash_table)
 {
-    typename HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey>::iterator iter;
+    typename HashTableST<Value, Key, HashFunc, ExtractKey, EqualKey>::iterator iter;
     for (iter = hash_table.begin(); iter != hash_table.end(); ++iter)
     {
         os.write((char *)&*iter, sizeof(Value));
@@ -671,10 +637,9 @@ namespace std
 {
 template <typename Value, typename Key, typename HashFunc,
          typename ExtractKey, typename EqualKey>
-inline void swap(HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> &x,
-     HashTableSingleThread<Value, Key, HashFunc, ExtractKey, EqualKey> &y)
+inline void swap(HashTableST<Value, Key, HashFunc, ExtractKey, EqualKey> &x,
+     HashTableST<Value, Key, HashFunc, ExtractKey, EqualKey> &y)
 { x.swap(y); }
 }
 
 #endif
-

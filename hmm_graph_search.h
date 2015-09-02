@@ -5,8 +5,8 @@
 #include "succinct_dbg.h"
 // #include "nucl_kmer.h"
 #include <vector>
-#include "hash_set_single_thread.h"
-#include "hash_map_single_thread.h"
+#include "hash_set_st.h"
+#include "hash_map_st.h"
 #include "pool_st.h"
 #include "hash_map.h"
 #include <math.h>
@@ -26,9 +26,9 @@ private:
 	static double exit_probabilities[3000];
 	static int dna_map[128];
 
-	// HashMapSingleThread<AStarNode, AStarNode> term_nodes;
-	HashSetSingleThread<AStarNodePtr> closed;
-	HashMapSingleThread<AStarNodePtr, AStarNodePtr> open_hash;
+	// HashMapST<AStarNode, AStarNode> term_nodes;
+	HashSetST<AStarNodePtr> closed;
+	HashMapST<AStarNodePtr, AStarNodePtr> open_hash;
 
 	PoolST<AStarNode> *pool_;
 
@@ -56,7 +56,7 @@ public:
 		}
 	}
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
-		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
+		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapST<AStarNode, AStarNode> &term_nodes) {
 		//right, forward search
 		AStarNode *goal_node = pool_->construct(), *goal_node2 = pool_->construct();
 		string right_max_seq = "", left_max_seq ="";
@@ -73,7 +73,7 @@ public:
 		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
 	}
 
-	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
+	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq, HashMapST<AStarNode, AStarNode> &term_nodes) {
 		int nucl_emission_mask = 0x7;
 		auto ptr = &goal;
 		max_seq.clear();
@@ -116,7 +116,7 @@ public:
 	}
 
 	bool astarSearch(ProfileHMM &hmm, int &starting_state, string &framed_word, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, 
-		AStarNode &goal_node, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
+		AStarNode &goal_node, HashMapST<AStarNode, AStarNode> &term_nodes) {
 		string scoring_word;
 		if (!forward) {
 			if (hmm.getAlphabet() == ProfileHMM::protein) {
@@ -167,7 +167,7 @@ public:
 	}
 
 	bool astarSearch(ProfileHMM &hmm, AStarNode &starting_node, SuccinctDBG &dbg, bool forward, NodeEnumerator &node_enumerator, 
-		AStarNode &goal_node, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
+		AStarNode &goal_node, HashMapST<AStarNode, AStarNode> &term_nodes) {
 		if (starting_node.state_no >= hmm.modelLength()) {
 			goal_node = starting_node;
 			return true;
@@ -175,7 +175,7 @@ public:
 
 		static const double log2 = log(2);
 
-		priority_queue<AStarNodePtr, vector<AStarNodePtr>> open;
+		priority_queue<AStarNodePtr, deque<AStarNodePtr>> open;
 		closed.clear();
 		open_hash.clear();
 		
@@ -186,8 +186,8 @@ public:
 		int pruned_nodes = 0;
 
 		//need to add a cache here
-		HashMapSingleThread<AStarNode, AStarNode>::iterator got_term_node = term_nodes.find(starting_node);
-		HashMapSingleThread<AStarNodePtr, AStarNodePtr>::iterator got;
+		HashMapST<AStarNode, AStarNode>::iterator got_term_node = term_nodes.find(starting_node);
+		HashMapST<AStarNodePtr, AStarNodePtr>::iterator got;
 
 		// printf("curr state: %c\n", starting_node.state);
 		if (got_term_node == term_nodes.end()) {
@@ -283,7 +283,7 @@ public:
 				}
 
 				if (open_node) {
-					open_hash.insert(make_pair(next_ptr, next_ptr));
+					open_hash[next_ptr] = next_ptr;
 					opened_nodes++;
 					// printf("Next's discovered_from: %p\n", next.discovered_from);
 					open.push(next_ptr);

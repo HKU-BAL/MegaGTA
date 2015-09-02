@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 		search[i].constructPool();
 	}
 
-	HashMapSingleThread<AStarNode, AStarNode> term_nodes;
+	HashMapST<AStarNode, AStarNode> term_nodes;
 	
 	#pragma omp parallel for
 	for (int i = 0; i < starting_kmer_storage.size(); ++i) {
