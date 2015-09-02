@@ -67,117 +67,100 @@ public:
 	    	return ret;
 	    } else {
 	    	int64_t next_node[4], next_node_2[4], next_node_3[4];
-	    	vector<uint8_t> codons[64];
-	    	vector<int64_t> ids[64];
+	    	vector<int64_t> packed_codon;
 	    	int outd = dbg.NextNodes(curr.node_id, next_node);
-	    	if (outd == 0) {
-	    		return ret;
-	    	} else {
-	    		for (int i = 0; i < outd; ++i) {
-	    			for (int j = 0; j < 16; ++j) {
-	    				codons[i * 16 + j].push_back(dbg.GetNodeLastChar(next_node[i])-1);
-	    				ids[i * 16 + j].push_back(next_node[i]);
-	    			}
-	    			int outd_2 = dbg.NextNodes(next_node[i], next_node_2);
-	    			if (outd_2 == 0) {
-	    				continue;
-	    			}
-    				for (int j = 0; j < outd_2; ++j) {
-    					for (int k = 0; k < 4; ++k) {
-    						codons[i * 16 + j * 4 + k].push_back(dbg.GetNodeLastChar(next_node_2[j])-1);
-    						ids[i * 16 + j * 4 + k].push_back(next_node_2[j]);
-    					}
-    					int outd_3 = dbg.NextNodes(next_node_2[j], next_node_3);
-    					if (outd_3 == 0) {
-    						continue;
-    					}
-    					for (int k = 0; k < outd_3; ++k) {
-    						codons[i * 16 + j * 4 + k].push_back(dbg.GetNodeLastChar(next_node_3[k])-1);
-    						ids[i * 16 + j * 4 + k].push_back(next_node_3[k]);
-    					}
-    				}
-		    	}
+
+    		for (int i = 0; i < outd; ++i) {
+    			int outd_2 = dbg.NextNodes(next_node[i], next_node_2);
+				for (int j = 0; j < outd_2; ++j) {
+					int outd_3 = dbg.NextNodes(next_node_2[j], next_node_3);
+					for (int k = 0; k < outd_3; ++k) {
+						int64_t packed = (next_node_3[k] << 16) |
+							             ((dbg.GetNodeLastChar(next_node[i])-1) << 6) |
+							             ((dbg.GetNodeLastChar(next_node_2[j])-1) << 3) |
+							             (dbg.GetNodeLastChar(next_node_3[k])-1);
+						packed_codon.push_back(packed);
+					}
+				}
 	    	}
 
 	    	//translate to aa
-	    	for (int i = 0; i < 64; ++i) {
-	    		if (codons[i].size() == 3) {
-	    			// next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
-	    			if (!forward) {
-	    				emission = Codon::rc_codonTable[codons[i][0]][codons[i][1]][codons[i][2]];
-	    			} else {
-	    				emission = Codon::codonTable[codons[i][0]][codons[i][1]][codons[i][2]];
-	    			}
-	    			if (emission == '*') {
-	    				continue;
-	    			}
+	    	for (int i = 0; i < packed_codon.size(); ++i) {
+	    		int64_t packed = packed_codon[i];
+    			// next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
+    			if (!forward) {
+    				emission = Codon::rc_codonTable[packed >> 6 & 7][packed >> 3 & 7][packed & 7];
+    			} else {
+    				emission = Codon::codonTable[packed >> 6 & 7][packed >> 3 & 7][packed & 7];
+    			}
 
-	    			if (child_node != NULL && !child_node->node_id == ids[i][2]) {
-	    				continue;
-	    			}
+    			if (emission == '*') {
+    				continue;
+    			}
 
+    			if (child_node != NULL && !child_node->node_id == (packed >> 16)) {
+    				continue;
+    			}
+
+    			auto next_ptr = pool.construct();
+    			auto &next = *next_ptr;
+				next = AStarNode(&curr, next_state, 'm');
+
+	    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
+	    		if (next.real_score >= curr.max_score) {
+	    			next.max_score = next.real_score;
+	    			next.negative_count = 0;
+	    		} else {
+	    			next.max_score = curr.max_score;
+	    			next.negative_count = curr.negative_count + 1;
+	    		}
+
+	    		next.nucl_emission = packed & ((1 << 9) - 1);
+	    		
+	    		next.emission = emission;
+	    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
+	    		next.length = curr.length + 1;
+	    		next.score = curr.score + next.this_node_score;
+	    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('m', next_state)));
+	    		next.indels = curr.indels;
+
+	    		next.node_id = packed >> 16;
+
+	    		if (child_node != NULL && *child_node == next) {
+	    			ret.push_back(AStarNodePtr(next_ptr));
+	    			return ret;
+	    		} else {
+	    			ret.push_back(AStarNodePtr(next_ptr));
+	    		}
+
+	    		// ret.push_back(next);
+
+	    		//insert node
+	    		if (curr.state != 'd') {
 	    			auto next_ptr = pool.construct();
-	    			auto &next = *next_ptr;
-					next = AStarNode(&curr, next_state, 'm');
+    				auto &next = *next_ptr;
+	    			next = AStarNode(&curr, curr.state_no, 'i');
 
-		    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
-		    		if (next.real_score >= curr.max_score) {
-		    			next.max_score = next.real_score;
-		    			next.negative_count = 0;
-		    		} else {
-		    			next.max_score = curr.max_score;
-		    			next.negative_count = curr.negative_count + 1;
-		    		}
+		    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
+		    		next.max_score = curr.max_score;
+		    		next.negative_count = curr.negative_count + 1;
 
-		    		next.nucl_emission = (codons[i][0] << 6) | (codons[i][1] << 3) | codons[i][2];
-		    		
+		    		next.nucl_emission = packed & ((1 << 9) - 1);
+
 		    		next.emission = emission;
-		    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
+		    		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
 		    		next.length = curr.length + 1;
 		    		next.score = curr.score + next.this_node_score;
-		    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('m', next_state)));
-		    		next.indels = curr.indels;
+		    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('i', curr.state_no)));
+		    		next.indels = curr.indels + 1;
 
-		    		next.node_id = ids[i][2];
+		    		next.node_id = packed >> 16;
 
 		    		if (child_node != NULL && *child_node == next) {
 		    			ret.push_back(AStarNodePtr(next_ptr));
 		    			return ret;
 		    		} else {
 		    			ret.push_back(AStarNodePtr(next_ptr));
-		    		}
-
-		    		// ret.push_back(next);
-
-		    		//insert node
-		    		if (curr.state != 'd') {
-		    			auto next_ptr = pool.construct();
-	    				auto &next = *next_ptr;
-		    			next = AStarNode(&curr, curr.state_no, 'i');
-
-			    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
-			    		next.max_score = curr.max_score;
-			    		next.negative_count = curr.negative_count + 1;
-
-			    		next.nucl_emission = (codons[i][0] << 6) | (codons[i][1] << 3) | codons[i][2];
-
-			    		next.emission = emission;
-			    		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
-			    		next.length = curr.length + 1;
-			    		next.score = curr.score + next.this_node_score;
-			    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('i', curr.state_no)));
-			    		next.indels = curr.indels + 1;
-
-			    		next.node_id = ids[i][2];
-
-			    		if (child_node != NULL && *child_node == next) {
-			    			ret.push_back(AStarNodePtr(next_ptr));
-			    			return ret;
-			    		} else {
-			    			ret.push_back(AStarNodePtr(next_ptr));
-			    		}
-
-			    		// ret.push_back(next);
 		    		}
 	    		}
 	    	}
