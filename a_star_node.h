@@ -80,4 +80,34 @@ public:
 	}
 };
 
+class AStarNodePtr {
+	AStarNode *ptr_;
+public:
+	AStarNodePtr(AStarNode *ptr = NULL): ptr_(ptr) {}
+
+	AStarNode &get() {
+		return *ptr_;
+	}
+
+	AStarNode *get_ptr() {
+		return ptr_;
+	}
+
+	bool operator== (const AStarNodePtr &rhs) const {
+		return !ptr_ && !rhs.ptr_ &&
+		       ptr_->node_id == rhs.ptr_->node_id &&
+		       ptr_->state == rhs.ptr_->state &&
+		       ptr_->state_no == rhs.ptr_->state_no;
+	}
+
+	bool operator< (const AStarNodePtr &rhs) const {
+		return !ptr_ && !rhs.ptr_ && *ptr_ < *rhs.ptr_;
+	}
+
+	uint64_t hash() const {
+		if (ptr_ == NULL) { return 0; }
+		return ptr_->hash();
+	}
+};
+
 #endif

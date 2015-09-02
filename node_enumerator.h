@@ -18,7 +18,6 @@ class NodeEnumerator
 private:
 	static const int SCALE = 10000;
 	static constexpr double hweight = 2.0;
-	AStarNode next;
 	uint8_t next_nucl;
 	char emission;
 	double match_trans;
@@ -37,11 +36,11 @@ public:
 		hcost = &_hcost;
 	};
 	~NodeEnumerator() {};
-	vector<AStarNode> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg) {
-		return enumerateNodes(curr, forward, dbg, NULL);
+	vector<AStarNodePtr> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg, PoolST<AStarNode> &pool) {
+		return enumerateNodes(curr, forward, dbg, pool, NULL);
 	}
-	vector<AStarNode> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg, AStarNode *child_node) {
-		vector<AStarNode> ret;
+	vector<AStarNodePtr> enumerateNodes(AStarNode &curr, bool forward, SuccinctDBG &dbg, PoolST<AStarNode> &pool, AStarNode *child_node) {
+		vector<AStarNodePtr> ret;
 
 		next_state = curr.state_no + 1;
 		switch (curr.state) {
@@ -118,7 +117,10 @@ public:
 	    				continue;
 	    			}
 
+	    			auto next_ptr = pool.construct();
+	    			auto &next = *next_ptr;
 					next = AStarNode(&curr, next_state, 'm');
+
 		    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
 		    		if (next.real_score >= curr.max_score) {
 		    			next.max_score = next.real_score;
@@ -128,7 +130,7 @@ public:
 		    			next.negative_count = curr.negative_count + 1;
 		    		}
 
-		    		next.nucl_emission = codons[i][0] << 6 | codons[i][1] << 3 | codons[i][2];
+		    		next.nucl_emission = (codons[i][0] << 6) | (codons[i][1] << 3) | codons[i][2];
 		    		
 		    		next.emission = emission;
 		    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
@@ -140,17 +142,20 @@ public:
 		    		next.node_id = ids[i][2];
 
 		    		if (child_node != NULL && *child_node == next) {
-		    			ret.push_back(next);
+		    			ret.push_back(AStarNodePtr(next_ptr));
 		    			return ret;
 		    		} else {
-		    			ret.push_back(next);
+		    			ret.push_back(AStarNodePtr(next_ptr));
 		    		}
 
 		    		// ret.push_back(next);
 
 		    		//insert node
 		    		if (curr.state != 'd') {
+		    			auto next_ptr = pool.construct();
+	    				auto &next = *next_ptr;
 		    			next = AStarNode(&curr, curr.state_no, 'i');
+
 			    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
 			    		next.max_score = curr.max_score;
 			    		next.negative_count = curr.negative_count + 1;
@@ -167,10 +172,10 @@ public:
 			    		next.node_id = ids[i][2];
 
 			    		if (child_node != NULL && *child_node == next) {
-			    			ret.push_back(next);
+			    			ret.push_back(AStarNodePtr(next_ptr));
 			    			return ret;
 			    		} else {
-			    			ret.push_back(next);
+			    			ret.push_back(AStarNodePtr(next_ptr));
 			    		}
 
 			    		// ret.push_back(next);
@@ -180,7 +185,10 @@ public:
 
 	    	//delete node
 	    	if (curr.state != 'i') {
+	    		auto next_ptr = pool.construct();
+    			auto &next = *next_ptr;
 	    		next = AStarNode(&curr, next_state, 'd');
+
 	    		next.real_score = curr.real_score + del_trans;
 	    		next.max_score = curr.max_score;
 	    		next.negative_count = curr.negative_count + 1;
@@ -196,10 +204,10 @@ public:
 	    		next.node_id = curr.node_id;
 
 	    		if (child_node != NULL && *child_node == next) {
-	    			ret.push_back(next);
+	    			ret.push_back(AStarNodePtr(next_ptr));
 	    			return ret;
 	    		} else {
-	    			ret.push_back(next);
+	    			ret.push_back(AStarNodePtr(next_ptr));
 	    		}
 
 	    		// ret.push_back(next);

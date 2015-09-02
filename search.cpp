@@ -21,7 +21,8 @@ int main(int argc, char **argv) {
 		exit(1);
 	}
 
-	// omp_set_num_threads(1);
+	int num_threads = omp_get_max_threads();
+	omp_set_num_threads(num_threads);
 
 	// setvbuf ( stdout , NULL , _IOLBF , 1024 );
 
@@ -55,10 +56,14 @@ int main(int argc, char **argv) {
 	}
 	vector<HMMGraphSearch> search;
 	vector<NodeEnumerator> for_node_enumerator, rev_node_enumerator;
-	for (int i = 0; i < omp_get_max_threads(); ++i) {
+	for (int i = 0; i < num_threads; ++i) {
 		search.push_back(HMMGraphSearch(heuristic_pruning));
 		for_node_enumerator.push_back(NodeEnumerator(forward_hmm, for_hcost));
 		rev_node_enumerator.push_back(NodeEnumerator(reverse_hmm, rev_hcost));
+	}
+
+	for (int i = 0; i < num_threads; ++i) {
+		search[i].constructPool();
 	}
 
 	HashMapSingleThread<AStarNode, AStarNode> term_nodes;

@@ -27,13 +27,25 @@ private:
 	static int dna_map[128];
 
 	// HashMapSingleThread<AStarNode, AStarNode> term_nodes;
-	deque<AStarNode*> created_nodes;
-	HashSetSingleThread<AStarNode> closed;
-	HashMapSingleThread<AStarNode, AStarNode> open_hash;
+	HashSetSingleThread<AStarNodePtr> closed;
+	HashMapSingleThread<AStarNodePtr, AStarNodePtr> open_hash;
+
+	PoolST<AStarNode> *pool_;
 
 public:
-	HMMGraphSearch(int &pruning) : heuristic_pruning(pruning) {};
-	~HMMGraphSearch() {};
+	HMMGraphSearch(int &pruning) : heuristic_pruning(pruning), pool_(NULL) {}
+	void constructPool() {
+		assert(!pool_);
+		pool_ = new PoolST<AStarNode>;
+		assert(pool_);
+	}
+
+	~HMMGraphSearch() {
+		if (pool_) {
+			delete pool_;
+		}
+	}
+
 	static void setUp() {
 		for (int i = 0; i < 3000; i++) {
             exit_probabilities[i] = log(2.0 / (i + 2)) * 2;
@@ -46,15 +58,15 @@ public:
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
 		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapSingleThread<AStarNode, AStarNode> &term_nodes) {
 		//right, forward search
-		AStarNode goal_node, goal_node2;
+		AStarNode *goal_node = pool_->construct(), *goal_node2 = pool_->construct();
 		string right_max_seq = "", left_max_seq ="";
-		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, goal_node, term_nodes);
-		partialResultFromGoal(goal_node, true, right_max_seq, term_nodes);
+		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, *goal_node, term_nodes);
+		partialResultFromGoal(*goal_node, true, right_max_seq, term_nodes);
 
 		//left, reverse search
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
-		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, goal_node2, term_nodes);
-		partialResultFromGoal(goal_node2, false, left_max_seq, term_nodes);
+		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, *goal_node2, term_nodes);
+		partialResultFromGoal(*goal_node2, false, left_max_seq, term_nodes);
 		deleteAStarNodes();
 		RevComp(left_max_seq);
 
@@ -133,10 +145,9 @@ public:
 				seq[i] = dna_map[framed_word[i]];
 			}
 		}
-		AStarNode *starting_node_ptr = new AStarNode();
-		created_nodes.push_back(starting_node_ptr);
-
+		AStarNode *starting_node_ptr = pool_->construct();
 		AStarNode &starting_node = *starting_node_ptr;
+
 		if (hmm.getAlphabet() == ProfileHMM::protein) {
 			starting_node = AStarNode(NULL, starting_state + (framed_word.size() / 3), 'm');
 			starting_node.length = framed_word.size() / 3;
@@ -164,11 +175,10 @@ public:
 
 		static const double log2 = log(2);
 
-		priority_queue<AStarNode, vector<AStarNode>> open;
+		priority_queue<AStarNodePtr, vector<AStarNodePtr>> open;
 		closed.clear();
 		open_hash.clear();
 		
-		AStarNode curr;
 		int opened_nodes = 1;
 
 		int repeated_nodes = 0;
@@ -177,70 +187,75 @@ public:
 
 		//need to add a cache here
 		HashMapSingleThread<AStarNode, AStarNode>::iterator got_term_node = term_nodes.find(starting_node);
-		HashMapSingleThread<AStarNode, AStarNode>::iterator got;
+		HashMapSingleThread<AStarNodePtr, AStarNodePtr>::iterator got;
 
+		// printf("curr state: %c\n", starting_node.state);
 		if (got_term_node == term_nodes.end()) {
-			for (AStarNode &next : node_enumerator.enumerateNodes(starting_node, forward, dbg)) {
+			for (auto &next : node_enumerator.enumerateNodes(starting_node, forward, dbg, *pool_)) {
 					// printf("1 Next's discovered_from: %p\n", next.discovered_from);
 
 				open.push(next);
 			}
 		} else {
-			for (AStarNode &next : node_enumerator.enumerateNodes(starting_node, forward, dbg, &got_term_node->second)) {
+			for (auto &next : node_enumerator.enumerateNodes(starting_node, forward, dbg, *pool_, &got_term_node->second)) {
 					// printf("2 Next's discovered_from: %p\n", next.discovered_from);
 
 				open.push(next);
 			}
 		}
 
-
 		if (open.empty()) {
 			return false;
 		}
-		AStarNode inter_goal = starting_node;
-		while (!open.empty()) {
-			auto curr_ptr = new AStarNode();
-			auto &curr = *curr_ptr;
-			curr = open.top();
 
-			created_nodes.push_back(curr_ptr);
+		auto inter_goal_ptr = &starting_node;
+
+		while (!open.empty()) {
+			auto curr_ptr = open.top();
+			auto &curr = curr_ptr.get();
+			// printf("curr state: %c\n", curr.state);
+
+
 			open.pop();
 			// cout << "queue size = "<<open.size() << '\n';
-			HashSetSingleThread<AStarNode>::iterator iter = closed.find(curr);
-			if (iter != NULL) {
+			auto iter = closed.find(curr_ptr);
+			if (iter != closed.end()) {
 				continue;
 			}
 			if (curr.state_no >= hmm.modelLength()) {
 				curr.partial = 0;
 				if ((curr.real_score + exit_probabilities[curr.length]) / log2 
-						> (inter_goal.real_score + exit_probabilities[inter_goal.length]) / log2) {
-					inter_goal = curr;
+						> (inter_goal_ptr->real_score + exit_probabilities[inter_goal_ptr->length]) / log2) {
+					inter_goal_ptr = &curr;
 				}
-				getHighestScoreNode(inter_goal, goal_node);
+				getHighestScoreNode(*inter_goal_ptr, goal_node);
 				// cout << "opened_nodes = " << opened_nodes <<" repeated_nodes = " << repeated_nodes << " replaced_nodes = " << replaced_nodes << " pruned_nodes = " << pruned_nodes << endl;
 				return true;
 			}
 
-			closed.insert(curr);
+			closed.insert(curr_ptr);
+
 			if ((curr.real_score + exit_probabilities[curr.length]) / log2 
-					> (inter_goal.real_score + exit_probabilities[inter_goal.length]) / log2) {
-				inter_goal = curr;
+					> (inter_goal_ptr->real_score + exit_probabilities[inter_goal_ptr->length]) / log2) {
+				inter_goal_ptr = &curr;
 			}
-			vector<AStarNode> temp_nodes_to_open;
+
+			vector<AStarNodePtr> temp_nodes_to_open;
 			got_term_node = term_nodes.find(curr);
 			if (got_term_node == term_nodes.end()) {
-				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg);
+				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg, *pool_);
 			} else {
-				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg, &got_term_node->second);
+				temp_nodes_to_open = node_enumerator.enumerateNodes(curr, forward, dbg, *pool_, &got_term_node->second);
 			}
-			for (AStarNode &next : temp_nodes_to_open) {
+			for (auto &next_ptr : temp_nodes_to_open) {
+				AStarNode &next = next_ptr.get();
 				bool open_node = false;
 				if (heuristic_pruning > 0) {
 					if ((next.length < 5 || next.negative_count <= heuristic_pruning) && next.real_score > 0.0) {
-						got = open_hash.find(next);
+						got = open_hash.find(next_ptr);
 						if (got != open_hash.end()) {
 							repeated_nodes++;
-							if (got->second < next) {
+							if (got->second < next_ptr) {
 								replaced_nodes++;
 								open_node = true;
 							}
@@ -251,10 +266,10 @@ public:
 						pruned_nodes++;
 					}
 				} else {
-					got = open_hash.find(next);
+					got = open_hash.find(next_ptr);
 					if (got != open_hash.end()) {
 						repeated_nodes++;
-						if (got->second < next) {
+						if (got->second < next_ptr) {
 							replaced_nodes++;
 							open_node = true;
 						}
@@ -264,17 +279,16 @@ public:
 				}
 
 				if (open_node) {
-					pair<AStarNode, AStarNode> pair_insert (next, next);
-					open_hash.insert(pair_insert);
+					open_hash.insert(make_pair(next_ptr, next_ptr));
 					opened_nodes++;
 					// printf("Next's discovered_from: %p\n", next.discovered_from);
-					open.push(next);
+					open.push(next_ptr);
 				}
 			}
 		}
 
-		inter_goal.partial = 1;
-		getHighestScoreNode(inter_goal, goal_node);
+		inter_goal_ptr->partial = 1;
+		getHighestScoreNode(*inter_goal_ptr, goal_node);
 		return true;
 	}
 
@@ -290,11 +304,9 @@ public:
 	}
 
 	void deleteAStarNodes() {
-		for (auto ptr : created_nodes) {
-			delete ptr;
-		}
-		created_nodes.clear();
+		pool_->clear();
 	}
+
 	char Comp(char c) {
 		switch (c) {
 			case 'A':
