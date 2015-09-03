@@ -98,7 +98,7 @@ public:
     				continue;
     			}
 
-    			if (child_node != NULL && !child_node->node_id == (packed >> 16)) {
+    			if (child_node != NULL && child_node->node_id != (packed >> 16)) {
     				continue;
     			}
 

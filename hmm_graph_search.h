@@ -3,7 +3,6 @@
 
 #include "profile_hmm.h"
 #include "succinct_dbg.h"
-// #include "nucl_kmer.h"
 #include <vector>
 #include "hash_set_st.h"
 #include "hash_map_st.h"
@@ -55,8 +54,9 @@ public:
 			dna_map["ACGTNacgtn"[i]] = "1234312343"[i] - '0';
 		}
 	}
+
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
-		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapST<AStarNode, AStarNode> &term_nodes) {
+		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapST<AStarNode, AStarNode> &term_nodes, HashMapST<AStarNode, AStarNode> &term_nodes_rev) {
 		//right, forward search
 		AStarNode *goal_node = pool_->construct(), *goal_node2 = pool_->construct();
 		string right_max_seq = "", left_max_seq ="";
@@ -65,8 +65,8 @@ public:
 
 		//left, reverse search
 		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
-		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, *goal_node2, term_nodes);
-		partialResultFromGoal(*goal_node2, false, left_max_seq, term_nodes);
+		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, *goal_node2, term_nodes_rev);
+		partialResultFromGoal(*goal_node2, false, left_max_seq, term_nodes_rev);
 		deleteAStarNodes();
 		RevComp(left_max_seq);
 
@@ -170,6 +170,7 @@ public:
 		AStarNode &goal_node, HashMapST<AStarNode, AStarNode> &term_nodes) {
 		if (starting_node.state_no >= hmm.modelLength()) {
 			goal_node = starting_node;
+			fprintf(stderr, "\t-\t-\t-\t-\t-\tfalse\n");
 			return true;
 		}
 
@@ -236,7 +237,7 @@ public:
 					inter_goal_ptr = &curr;
 				}
 				getHighestScoreNode(*inter_goal_ptr, goal_node);
-				cout << "DONE: opened_nodes = " << opened_nodes <<" repeated_nodes = " << repeated_nodes << " replaced_nodes = " << replaced_nodes << " pruned_nodes = " << pruned_nodes << endl;
+				fprintf(stderr, "%d\t%d\t%d\t%d\t%d\t%d\tfalse\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
 				return true;
 			}
 
@@ -298,7 +299,7 @@ public:
 
 		inter_goal_ptr->partial = 1;
 		getHighestScoreNode(*inter_goal_ptr, goal_node);
-		cout << "PART: opened_nodes = " << opened_nodes <<" repeated_nodes = " << repeated_nodes << " replaced_nodes = " << replaced_nodes << " pruned_nodes = " << pruned_nodes << endl;
+		fprintf(stderr, "%d\t%d\t%d\t%d\t%d\t%d\ttrue\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
 		return true;
 	}
 
