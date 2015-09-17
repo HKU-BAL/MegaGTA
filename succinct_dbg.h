@@ -89,6 +89,11 @@ class SuccinctDBG {
         return (*(w_ + x / kWCharsPerWord) >> (x % kWCharsPerWord * kWBitsPerChar)) & kWCharMask;
     }
 
+    uint8_t GetEdgeOutLabel(int64_t x) {
+        int w = GetW(x);
+        return w > 4 ? w - 4 : w;
+    }
+
     bool IsLast(int64_t x) {
         return (*(last_ + x / 64) >> (x % 64)) & 1;
     }
@@ -157,6 +162,7 @@ class SuccinctDBG {
 
     int64_t Index(uint8_t *seq);
     int64_t IndexBinarySearch(uint8_t *seq);
+    int64_t IndexBinarySearchEdge(uint8_t *seq);
     int Label(int64_t edge_or_node_id, uint8_t *seq);
 
     int EdgeIndegree(int64_t edge_id);

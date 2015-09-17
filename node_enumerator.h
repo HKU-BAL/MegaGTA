@@ -68,17 +68,17 @@ public:
 	    } else {
 	    	int64_t next_node[4], next_node_2[4], next_node_3[4];
 	    	vector<int64_t> packed_codon;
-	    	int outd = dbg.NextNodes(curr.node_id, next_node);
+	    	int outd = dbg.OutgoingEdges(curr.node_id, next_node);
 
     		for (int i = 0; i < outd; ++i) {
-    			int outd_2 = dbg.NextNodes(next_node[i], next_node_2);
+    			int outd_2 = dbg.OutgoingEdges(next_node[i], next_node_2);
 				for (int j = 0; j < outd_2; ++j) {
-					int outd_3 = dbg.NextNodes(next_node_2[j], next_node_3);
+					int outd_3 = dbg.OutgoingEdges(next_node_2[j], next_node_3);
 					for (int k = 0; k < outd_3; ++k) {
 						int64_t packed = (next_node_3[k] << 16) |
-							             ((dbg.GetNodeLastChar(next_node[i])-1) << 6) |
-							             ((dbg.GetNodeLastChar(next_node_2[j])-1) << 3) |
-							             (dbg.GetNodeLastChar(next_node_3[k])-1);
+							             ((dbg.GetEdgeOutLabel(next_node[i])-1) << 6) |
+							             ((dbg.GetEdgeOutLabel(next_node_2[j])-1) << 3) |
+							             (dbg.GetEdgeOutLabel(next_node_3[k])-1);
 						packed_codon.push_back(packed);
 					}
 				}

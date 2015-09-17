@@ -131,17 +131,17 @@ public:
 			scoring_word = aa.asString();
 		}
 		// NuclKmer kmer;
-		uint8_t seq[dbg.kmer_k];
+		uint8_t seq[dbg.kmer_k + 1];
 		if (!forward) {
 			string rc_frame_word = framed_word;
 			RevComp(rc_frame_word);
 			// kmer = NuclKmer(rc_frame_word);
-			for (int i = 0; i < dbg.kmer_k; ++i) {
+			for (int i = 0; i < dbg.kmer_k + 1; ++i) {
 				seq[i] = dna_map[rc_frame_word[i]];
 			}
 		} else {
 			// kmer = NuclKmer(framed_word);
-			for (int i = 0; i < dbg.kmer_k; ++i) {
+			for (int i = 0; i < dbg.kmer_k + 1; ++i) {
 				seq[i] = dna_map[framed_word[i]];
 			}
 		}
@@ -160,7 +160,7 @@ public:
 		starting_node.score = scoreStart(hmm, scoring_word, starting_state);
 		starting_node.real_score = realScoreStart(hmm, scoring_word, starting_state);
 		
-		int64_t node_id = dbg.IndexBinarySearch(seq);
+		int64_t node_id = dbg.IndexBinarySearchEdge(seq);
 		starting_node.node_id = node_id;
 
 		return astarSearch(hmm, starting_node, dbg, forward, node_enumerator, goal_node, term_nodes);

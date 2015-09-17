@@ -527,6 +527,21 @@ int SuccinctDBG::Label(int64_t edge_or_node_id, uint8_t *seq) {
     return kmer_k;
 }
 
+int64_t SuccinctDBG::IndexBinarySearchEdge(uint8_t *seq) {
+    int64_t node = IndexBinarySearch(seq);
+    if (node == -1) { return -1; }
+    do {
+        uint8_t edge_label = GetW(node);
+        if (edge_label == seq[kmer_k] || edge_label - 4 == seq[kmer_k]) {
+            return node;
+        }
+
+        --node;
+    }
+    while (node >= 0 && !IsLastOrTip(node));
+}
+
+
 int64_t SuccinctDBG::EdgeReverseComplement(int64_t edge_id) {
     if (!IsValidEdge(edge_id)) {
         return -1;
