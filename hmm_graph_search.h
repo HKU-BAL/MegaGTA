@@ -57,20 +57,28 @@ public:
 
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
 		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapST<AStarNode, AStarNode> &term_nodes, HashMapST<AStarNode, AStarNode> &term_nodes_rev) {
-		//right, forward search
-		AStarNode *goal_node = pool_->construct(), *goal_node2 = pool_->construct();
-		string right_max_seq = "", left_max_seq ="";
-		astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, *goal_node, term_nodes);
-		partialResultFromGoal(*goal_node, true, right_max_seq, term_nodes);
 
-		//left, reverse search
-		int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
-		astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, *goal_node2, term_nodes_rev);
-		partialResultFromGoal(*goal_node2, false, left_max_seq, term_nodes_rev);
-		deleteAStarNodes();
-		RevComp(left_max_seq);
+		// cout << "right start_state = " << start_state << endl;
+		// cout << "left start_state = " << reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1) << endl;
 
-		printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
+		// if (start_state + starting_kmer.size() <= forward_hmm.modelLength()) {
+			//right, forward search
+			AStarNode *goal_node = pool_->construct(), *goal_node2 = pool_->construct();
+			string right_max_seq = "", left_max_seq ="";
+			astarSearch(forward_hmm, start_state, starting_kmer, dbg, true, forward_enumerator, *goal_node, term_nodes);
+			partialResultFromGoal(*goal_node, true, right_max_seq, term_nodes);
+
+			// cout << "right start_state = " << start_state << endl;
+
+			//left, reverse search
+			int l_starting_state = reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1);
+			astarSearch(reverse_hmm, l_starting_state, starting_kmer, dbg, false, reverse_enumerator, *goal_node2, term_nodes_rev);
+			partialResultFromGoal(*goal_node2, false, left_max_seq, term_nodes_rev);
+			deleteAStarNodes();
+			RevComp(left_max_seq);
+
+			printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
+		// }		
 	}
 
 	void partialResultFromGoal(AStarNode &goal, bool forward, string &max_seq, HashMapST<AStarNode, AStarNode> &term_nodes) {
@@ -98,7 +106,7 @@ public:
 		reverse(max_seq.begin(), max_seq.end());
 	}
 
-
+	//bugs
 	double scoreStart(ProfileHMM &hmm, string &starting_kmer, int starting_state) {
 		double ret = 0;
 		for (int i = 1; i <= starting_kmer.size(); i++) {
