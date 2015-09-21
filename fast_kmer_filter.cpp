@@ -95,7 +95,12 @@ int main(int argc, char **argv) {
 	// xtimer_t timer;
 	// timer.reset();
     while (kseq_read(seq2) >= 0) {
-    	sequence_storage.push_back(Sequence(seq2->name.s, seq2->comment.s, seq2->seq.s));
+    	// cout << "die-2" << endl;
+    	// cout << seq2->name.s << endl;
+    	// // cout << seq2->comment.s << endl;
+    	// cout << seq2->seq.s << endl;
+    	sequence_storage.push_back(Sequence(seq2->name.s, "", seq2->seq.s));
+    	// cout << "die-1" << endl;
     	if (++count == batch_size) {
     		// timer.start();
     		count = 0;
