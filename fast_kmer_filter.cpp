@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
 	// xtimer_t timer;
 	// timer.reset();
     while (kseq_read(seq2) >= 0) {
-    	sequence_storage.push_back(Sequence(seq2->name.s, seq2->comment.s, seq2->seq.s));
+    	sequence_storage.push_back(Sequence(seq2->name.s, "", seq2->seq.s));
     	if (++count == batch_size) {
     		// timer.start();
     		count = 0;
@@ -118,7 +118,6 @@ int main(int argc, char **argv) {
     	// timer.start();
     	#pragma omp parallel for schedule(dynamic, 1)
     	for (int i = 0; i < count; i++) {
-	    	// vector<ProtKmerGenerator> kmer_gens;
 		   	if (sequence_storage[i].sequence_.size() >= kmer_size) {
 		   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size);
 		   		RevComp(sequence_storage[i].sequence_);
