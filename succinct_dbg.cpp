@@ -539,6 +539,7 @@ int64_t SuccinctDBG::IndexBinarySearchEdge(uint8_t *seq) {
         --node;
     }
     while (node >= 0 && !IsLastOrTip(node));
+    return -1;
 }
 
 
