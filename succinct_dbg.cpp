@@ -697,10 +697,7 @@ void SuccinctDBG::LoadFromMultiFile(const char *dbg_name, bool need_multiplicity
     }
 
     assert(!sdbg_reader.NextItem(item));
-    if (tip_label_offset != num_tip_nodes_ * sdbg_reader.words_per_tip_label()) {
-        xerr_and_exit("tip_label_offset: %lld, num_tip_nodes_: %lld, sdbg_reader.words_per_tip_label(): %lld\n", tip_label_offset, num_tip_nodes_, sdbg_reader.words_per_tip_label());
-    }
-    assert(tip_label_offset == num_tip_nodes_ * sdbg_reader.words_per_tip_label());
+    assert(tip_label_offset == (int64_t)num_tip_nodes_ * sdbg_reader.words_per_tip_label());
 
     invalid_ = (unsigned long long *) MallocAndCheck(sizeof(unsigned long long) * word_needed_last, __FILE__, __LINE__);
     memcpy(invalid_, is_tip_, sizeof(unsigned long long) * word_needed_last);
