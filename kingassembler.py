@@ -379,9 +379,9 @@ def check_opt():
     if opt.k_list[0] < 15 or opt.k_list[len(opt.k_list) - 1] > 127:
         raise Usage("All k's should be in range [15, 127]")
 
-    for k in opt.k_list:
-        if k % 2 == 0:
-            raise Usage("All k must be odd number!")
+    # for k in opt.k_list:
+    #     if k % 2 == 0:
+    #         raise Usage("All k must be odd number!")
 
     for i in range(1, len(opt.k_list)):
         if opt.k_list[i] - opt.k_list[i-1] > 28:
@@ -735,7 +735,7 @@ def build_first_graph():
 
         except OSError as o:
             if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-                logging.error("Error: sub-program sdbg_builder not found, please recompile MEGAHIT")
+                logging.error("Error: sub-program sdbg_builder not found, please recompile MEGAHIT-GT")
             exit(1)
         except KeyboardInterrupt:
             p.terminate()
@@ -747,9 +747,78 @@ def build_first_graph():
     elif not opt.keep_tmp_files:
         delete_tmp_after_build(opt.k_min)
 
+def build_graph(kmer_k, kmer_from, num_edge_files):
+    global cp
+    if (not opt.continue_mode) or (cp > opt.last_cp):
+        build_comm_opt = ["--host_mem", str(opt.host_mem),
+                             "--mem_flag", str(opt.mem_flag),
+                             "--gpu_mem", str(opt.gpu_mem),
+                             "--output_prefix", graph_prefix(kmer_k),
+                             "--num_cpu_threads", str(opt.num_cpu_threads),
+                             "-k", str(kmer_k), 
+                             "--kmer_from", str(kmer_from),
+                             "--num_edge_files", str(num_edge_files)]
+
+        build_cmd = [opt.bin_dir + opt.builder, "seq2sdbg"] + build_comm_opt
+
+        file_size = 0
+
+        if (os.path.exists(graph_prefix(kmer_k) + ".edges.0")):
+            build_cmd += ["--input_prefix", graph_prefix(kmer_k)]
+            file_size += os.path.getsize(graph_prefix(kmer_k) + ".edges.0")
+
+        if (os.path.exists(contig_prefix(kmer_from) + ".contigs.fa")):
+            build_cmd += ["--contig", contig_prefix(kmer_from) + ".contigs.fa"]
+
+        if (os.path.exists(contig_prefix(kmer_from) + ".addi.fa")):
+            build_cmd += ["--addi_contig", contig_prefix(kmer_from) + ".addi.fa"]
+            file_size += os.path.getsize(contig_prefix(kmer_from) + ".addi.fa")
+
+        if (os.path.exists(contig_prefix(kmer_from) + ".local.fa")):
+            build_cmd += ["--local_contig", contig_prefix(kmer_from) + ".local.fa"]
+            file_size += os.path.getsize(contig_prefix(kmer_from) + ".local.fa")
+
+        if file_size == 0:
+            return False # not build
+
+        if not opt.no_mercy and kmer_k == opt.k_min:
+            build_cmd.append("--need_mercy")
+
+        try:
+            logging.info("--- [%s] Building graph for k = %d ---" % (datetime.now().strftime("%c"), kmer_k))
+            logging.debug("%s" % (" ").join(build_cmd))
+
+            p = subprocess.Popen(build_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            
+            while True:
+                line = p.stderr.readline().rstrip()
+                if not line:
+                    break;
+                logging.debug(line)
+
+            ret_code = p.wait()
+
+            if ret_code != 0:
+                logging.error("Error occurs when running \"builder build\" for k = %d; please refer to %s for detail" % (kmer_k, log_file_name()))
+                logging.error("[Exit code %d]" % ret_code)
+                exit(ret_code)
+
+        except OSError as o:
+            if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+                logging.error("Error: sub-program builder not found, please recompile MEGAHIT")
+            exit(1)
+        except KeyboardInterrupt:
+            p.terminate()
+            exit(1)
+
+    write_cp()
+    if not opt.keep_tmp_files:
+        delete_tmp_after_build(kmer_k)
+    return True
+
 def find_seed():
     global cp
-    parameter = [str(opt.aligned_ref), str(opt.se[0]), str(opt.k_list[0])]
+    parameter = [str(opt.aligned_ref), str(opt.se[0]), str(opt.k_list[0]+1)]
     cmd = [opt.bin_dir + opt.seed_finder] + parameter
 
     try:
@@ -769,7 +838,7 @@ def find_seed():
 
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program kingAssembler_find_seed not found, please recompile MEGAHIT")
+            logging.error("Error: sub-program kingAssembler_find_seed not found, please recompile MEGAHIT-GT")
         exit(1)
     except KeyboardInterrupt:
         p.terminate()
@@ -788,6 +857,10 @@ def search_contigs():
         with open(opt.raw_contigs_file, "w") as raw_contigs:
             p = subprocess.Popen(cmd, stdout=raw_contigs, stderr=subprocess.PIPE)
         p.wait()
+    except OSError as o:
+        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+            logging.error("Error: sub-program kingAssembler_search not found, please recompile MEGAHIT-GT")
+        exit(1)
 
     except KeyboardInterrupt:
         p.terminate()
@@ -796,16 +869,21 @@ def search_contigs():
 
 def filter_contigs():
     global cp
-    parameter = [str(opt.filter_len), "<" + opt.raw_contigs_file]
+    parameter = [str(opt.filter_len)]
     cmd = [opt.bin_dir + opt.megahit_toolkit, "filterbylen"] + parameter
 
     try:
         logging.info("--- [%s] Filtering contigs with min_len = %d ---" % (datetime.now().strftime("%c"), opt.filter_len))
         logging.debug("cmd: %s" % (" ").join(cmd))
-        with open(opt.out_dir + opt.filtered_nucl_file, "w") as filtered_nucl_contigs:
-            p = subprocess.Popen(cmd, shell = True, stdout=filtered_nucl_contigs, stderr=subprocess.PIPE)
+        nucl_file = opt.out_dir + opt.filtered_nucl_file
+        with open(nucl_file, "w") as filtered_nucl_contigs:
+            with open(opt.raw_contigs_file, "r") as raw_contigs:
+                p = subprocess.Popen(cmd, stdin=raw_contigs, stdout=filtered_nucl_contigs, stderr=subprocess.PIPE)
         p.wait()
-
+    except OSError as o:
+        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+            logging.error("Error: sub-program megahit_toolkit not found, please recompile MEGAHIT")
+        exit(1)
     except KeyboardInterrupt:
         p.terminate()
         exit(1)
@@ -813,32 +891,19 @@ def filter_contigs():
 
 def translate_to_aa():
     global cp
-    parameter = ["<" + opt.out_dir + opt.filtered_nucl_file]
+    parameter = [opt.out_dir + opt.filtered_nucl_file]
     cmd = [opt.bin_dir + opt.aa_translator] + parameter
 
     try:
         logging.info("--- [%s] Translating nucl contigs to aa contigs ---" % (datetime.now().strftime("%c")))
         logging.debug("cmd: %s" % (" ").join(cmd))
         with open(opt.out_dir + opt.filtered_prot_file, "w") as filtered_prot_contigs:
-            p = subprocess.Popen(cmd, shell = True, stdout=filtered_prot_contigs, stderr=subprocess.PIPE)
-
-    except KeyboardInterrupt:
-        p.terminate()
+            p = subprocess.Popen(cmd, stdout=filtered_prot_contigs, stderr=subprocess.PIPE)
+        p.wait()
+    except OSError as o:
+        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+            logging.error("Error: sub-program translate not found, please recompile MEGAHIT-GT")
         exit(1)
-    write_cp()
-
-def contigs_clustering():
-    global cp
-    parameter = ["derep", "-o temp_prot_derep.fa", "ids samples prot_merged.fasta"]
-    cmd = ["java", "-Xmx"+str(opt.clustering_java_heap_memory)+"G", "-jar", opt.bin_dir+opt.clustering] + parameter
-
-    try:
-        logging.info("--- [%s] Clustering ---" % (datetime.now().strftime("%c")))
-        logging.debug("cmd: %s" % (" ").join(cmd))
-        # with open(opt.out_dir + opt.filtered_prot_file, "w") as filtered_prot_contigs:
-        #     p = subprocess.Popen(cmd, shell = True, stdout=filtered_prot_contigs, stderr=subprocess.PIPE)
-        p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
     except KeyboardInterrupt:
         p.terminate()
         exit(1)
@@ -883,42 +948,19 @@ def main(argv = None):
         build_lib()
 
         build_first_graph()
+        # if k_list contains only one k, then no iteration; otherwise we iterate through them
+        if len(opt.k_list) == 1:
+            build_first_graph()
+	        find_seed()
+	        search_contigs()
+	        filter_contigs()
+	        translate_to_aa()
+	    elif len(opt.k_list) > 1:
+	        # iterations; Dinghua
+	        build_first_graph()
+	        # this command can provide "# of reads size" format output, but Dinghua should add a space to the second line of output in readstat file
+	        # `megahit_toolkit readstat <contigs.fa | head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s`
 
-        if not opt.graph_only:
-            # assemble(opt.k_min)
-
-            # cur_k = opt.k_min
-            # next_k_idx = 0
-
-            # while cur_k < opt.k_max:
-            #     next_k_idx += 1
-            #     next_k = opt.k_list[next_k_idx]
-            #     k_step = next_k - cur_k
-
-            #     if not opt.no_local:
-            #         local_assemble(cur_k, next_k)
-
-            #     iterate(cur_k, k_step)
-
-            #     if not build_graph(next_k, cur_k, 1):
-            #         opt.k_max = cur_k # for merging cur_k.contigs.fa to final
-            #         break
-
-            #     assemble(next_k)
-            #     cur_k = next_k
-            # # end while
-
-            # merge_final()
-
-            # if not opt.keep_tmp_files and os.path.exists(opt.temp_dir):
-            #     shutil.rmtree(opt.temp_dir)
-
-            # open(opt.out_dir + "done", "w").close()
-            find_seed()
-            search_contigs()
-            filter_contigs()
-            translate_to_aa()
-            contigs_clustering()
 
         logging.info("--- [%s] ALL DONE. Time elapsed: %f seconds ---" % (datetime.now().strftime("%c"), time.time() - start_time))
 

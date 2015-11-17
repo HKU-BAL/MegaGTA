@@ -15,6 +15,7 @@
 #include "src/sequence/AASequence.h"
 #include "node_enumerator.h"
 #include <iostream>
+#include <stdio.h>
 
 using namespace std;
 
@@ -56,10 +57,7 @@ public:
 	}
 
 	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
-		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapST<AStarNode, AStarNode> &term_nodes, HashMapST<AStarNode, AStarNode> &term_nodes_rev) {
-
-		// cout << "right start_state = " << start_state << endl;
-		// cout << "left start_state = " << reverse_hmm.modelLength() - start_state - starting_kmer.size() / (reverse_hmm.getAlphabet() == ProfileHMM::protein ? 3 : 1) << endl;
+		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapST<AStarNode, AStarNode> &term_nodes, HashMapST<AStarNode, AStarNode> &term_nodes_rev, FILE * out_file) {
 
 		 // if (start_state + starting_kmer.size() <= forward_hmm.modelLength() + 1) {
 			//right, forward search
@@ -77,7 +75,7 @@ public:
 			deleteAStarNodes();
 			RevComp(left_max_seq);
 
-			printf(">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
+			fprintf(out_file, ">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
 		// }
 	}
 
