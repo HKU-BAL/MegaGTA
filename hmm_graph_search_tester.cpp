@@ -4,7 +4,6 @@
 #include "most_probable_path.h"
 #include "hmmer3b_parser.h"
 #include "succinct_dbg.h"
-#include "hash_map.h"
 #include <iostream>
 
 using namespace std;

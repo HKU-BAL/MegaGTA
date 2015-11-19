@@ -4,7 +4,6 @@
 #include "most_probable_path.h"
 #include "hmmer3b_parser.h"
 #include "succinct_dbg.h"
-#include "hash_map.h"
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -80,7 +79,8 @@ int main(int argc, char **argv) {
 			}
 		}
 		FILE * out_file;
-		out_file = fopen(gene + "_raw_contigs.fasta", "w");
+		string out_file_name = gene + "_raw_contigs.fasta";
+		out_file = fopen(out_file_name.c_str(), "w");
 		vector<HMMGraphSearch> search;
 		vector<NodeEnumerator> for_node_enumerator, rev_node_enumerator;
 		for (int i = 0; i < num_threads; ++i) {

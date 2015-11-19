@@ -95,12 +95,7 @@ int main(int argc, char **argv) {
 	// xtimer_t timer;
 	// timer.reset();
     while (kseq_read(seq2) >= 0) {
-    	// cout << "die-2" << endl;
-    	// cout << seq2->name.s << endl;
-    	// // cout << seq2->comment.s << endl;
-    	// cout << seq2->seq.s << endl;
     	sequence_storage.push_back(Sequence(seq2->name.s, "", seq2->seq.s));
-    	// cout << "die-1" << endl;
     	if (++count == batch_size) {
     		// timer.start();
     		count = 0;
@@ -123,7 +118,6 @@ int main(int argc, char **argv) {
     	// timer.start();
     	#pragma omp parallel for schedule(dynamic, 1)
     	for (int i = 0; i < count; i++) {
-	    	// vector<ProtKmerGenerator> kmer_gens;
 		   	if (sequence_storage[i].sequence_.size() >= kmer_size) {
 		   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size);
 		   		RevComp(sequence_storage[i].sequence_);
@@ -150,11 +144,8 @@ void ProcessSequenceMulti(const string &sequence, const string &name, const stri
     		HashSet<ProtKmer>::iterator iter = kmerSet.find(kmer);
     		if (iter != NULL) {
     			int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
-
-    			// printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), gen + 1, kmer.decodePacked().c_str(), kmer_gens[gen].getPosition());
-    			// printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), gen + 1, kmer.decodePacked().c_str(), iter->model_position);
     			printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), 1, kmer.decodePacked().c_str(), iter->model_position);
-
+                // gene name, read name, 
     		}
     	}
     }	

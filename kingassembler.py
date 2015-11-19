@@ -710,6 +710,9 @@ def build_first_graph():
         else:
             cmd = [opt.bin_dir + opt.builder, "count"] + count_opt
 
+        # if not_first_k:
+        #     cmd += ["--assist_seq", prev.contig.fa]
+
         try:
             if opt.kmin_1pass:
                 logging.info("--- [%s] Extracting solid (k+1)-mers and building sdbg for k = %d ---" % (datetime.now().strftime("%c"), opt.k_min))
@@ -947,19 +950,18 @@ def main(argv = None):
         write_lib()
         build_lib()
 
-        build_first_graph()
         # if k_list contains only one k, then no iteration; otherwise we iterate through them
         if len(opt.k_list) == 1:
             build_first_graph()
-	        find_seed()
-	        search_contigs()
-	        filter_contigs()
-	        translate_to_aa()
-	    elif len(opt.k_list) > 1:
-	        # iterations; Dinghua
-	        build_first_graph()
-	        # this command can provide "# of reads size" format output, but Dinghua should add a space to the second line of output in readstat file
-	        # `megahit_toolkit readstat <contigs.fa | head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s`
+            find_seed()
+            search_contigs()
+            filter_contigs()
+            translate_to_aa()
+        elif len(opt.k_list) > 1:
+            # iterations; Dinghua
+            build_first_graph()
+            # this command can provide "# of reads size" format output, but Dinghua should add a space to the second line of output in readstat file
+            # `megahit_toolkit readstat <contigs.fa | head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s`
 
 
         logging.info("--- [%s] ALL DONE. Time elapsed: %f seconds ---" % (datetime.now().strftime("%c"), time.time() - start_time))

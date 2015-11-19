@@ -7,7 +7,6 @@
 #include "hash_set_st.h"
 #include "hash_map_st.h"
 #include "pool_st.h"
-#include "hash_map.h"
 #include <math.h>
 #include <queue>
 #include <algorithm>
