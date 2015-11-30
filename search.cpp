@@ -15,21 +15,14 @@
 using namespace std;
 
 int main(int argc, char **argv) {
-	// if (argc < 5) {
-	// 	fprintf(stderr, "Usage: %s <succinct_dbg> <forward_hmm> <reverse_hmm> <starting_kmers> [num_threads=0]\n", argv[0]);
-	// 	exit(1);
-	// }
 
 	if (argc < 5) {
 		fprintf(stderr, "Usage: %s <succinct_dbg> <gene_list> <starting_kmers> <output_info> [num_threads=0]\n", argv[0]);
-		//assumptions: all the hmm and starting kmer files are defined in a consistent way
 		exit(1);
 	}
 
 	int num_threads = 0;
-	// if (argc > 5) {
-	// 	num_threads = atoi(argv[5]);
-	// }
+
 	if (argc > 5) {
 		num_threads = atoi(argv[4]);
 	}
@@ -53,6 +46,7 @@ int main(int argc, char **argv) {
 			istringstream iss(gene);
 			string gene_name, forward_hmm_path, reverse_hmm_path;
 			iss >> gene_name >> forward_hmm_path >> reverse_hmm_path;
+			gene_info.clear();
 			gene_info.push_back(gene_name);
 			gene_info.push_back(forward_hmm_path);
 			gene_info.push_back(reverse_hmm_path);
@@ -60,11 +54,11 @@ int main(int argc, char **argv) {
 		}
 	}
 
-	for (auto& gene_info : gene_list) {
-		ifstream hmm_file (gene_info[1]);
+	for (vector<string>& gene : gene_list) {
+		ifstream hmm_file (gene[1]);
 		ProfileHMM forward_hmm = ProfileHMM(true);
 		Parser::readHMM(hmm_file, forward_hmm);
-		ifstream hmm_file_2 (gene_info[2]);
+		ifstream hmm_file_2 (gene[2]);
 		ProfileHMM reverse_hmm = ProfileHMM(true);
 		Parser::readHMM(hmm_file_2, reverse_hmm);
 		MostProbablePath for_hcost = MostProbablePath(forward_hmm);
@@ -72,7 +66,9 @@ int main(int argc, char **argv) {
 
 		pair<string, int> starting_kmer;
 		vector<pair<string, int>> starting_kmer_storage;
-		ifstream starting_kmer_file (argv[3]);
+		string sk = string(argv[3]) + "_" + gene[0] + "_starting_kmers.txt";
+		ifstream starting_kmer_file (sk);
+
 		if (starting_kmer_file.is_open()) {
 			string line, line_array[8];
 			while ( getline (starting_kmer_file, line) ) {
@@ -84,9 +80,11 @@ int main(int argc, char **argv) {
 				starting_kmer = make_pair(line_array[3], stoi(line_array[7]) -1 );
 				starting_kmer_storage.push_back(starting_kmer);
 			}
+		} else {
+			exit(1);
 		}
 		FILE * out_file;
-		string out_file_name = string(argv[4]) + "_raw_contigs_" + gene_info[0] + ".fasta";
+		string out_file_name = string(argv[4]) + "_raw_contigs_" + gene[0] + ".fasta";
 		out_file = fopen(out_file_name.c_str(), "w");
 		vector<HMMGraphSearch> search;
 		vector<NodeEnumerator> for_node_enumerator, rev_node_enumerator;

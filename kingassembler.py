@@ -771,8 +771,8 @@ def find_seed(gene):
     try:
         logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, opt.k_current))
         logging.debug("cmd: %s" % (" ").join(cmd))
-        seed_file = opt.out_dir + "starting_kmers_unsorted.txt"
-        final_seed_file = opt.out_dir + str(opt.k_current) + "_starting_kmers.txt"
+        seed_file = opt.out_dir + str(opt.k_current) + "_" + gene + "_starting_kmers_unsorted.txt"
+        final_seed_file = opt.out_dir + str(opt.k_current) + "_" + gene + "_starting_kmers.txt"
         with open(seed_file, "w") as starting_kmers:
             p = subprocess.Popen(cmd, stdout=starting_kmers, stderr=subprocess.PIPE)
         ret_code = p.wait()
@@ -794,7 +794,7 @@ def find_seed(gene):
 
 def search_contigs():
     global cp
-    parameter = [graph_prefix(opt.k_current), "gene_list.txt", opt.out_dir + str(opt.k_current) + "_starting_kmers.txt", opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
+    parameter = [graph_prefix(opt.k_current), "gene_list.txt", opt.out_dir + str(opt.k_current), opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
     cmd = [opt.bin_dir + opt.contig_searcher] + parameter
 
     try:
