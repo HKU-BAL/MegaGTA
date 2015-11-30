@@ -146,6 +146,7 @@ void ProcessSequenceMulti(const string &sequence, const string &name, const stri
     			int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
     			printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), 1, kmer.decodePacked().c_str(), iter->model_position);
                 // gene name, read name, 
+                // printf("rplB\t%s\t357259128\t%s\ttrue\t%d\t%s\t%d\n", name.c_str(), sequence.substr(nucl_pos, kmer_size).c_str(), 1, kmer.decodePacked().c_str(), iter->model_position);
     		}
     	}
     }	

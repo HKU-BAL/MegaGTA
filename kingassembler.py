@@ -103,6 +103,7 @@ class Options():
         self.k_max = 99
         self.k_step = 20
         self.k_list = list()
+        self.k_current = -1
         self.set_list_by_min_max_step = True
         self.min_count = 2
         self.bin_dir = sys.path[0] + "/"
@@ -137,7 +138,7 @@ class Options():
         self.graph_only = False
         self.seed_finder = "kingAssembler_find_seed"
         self.contig_searcher = "kingAssembler_search"
-        self.raw_contigs_file = ""
+        self.combined_contigs_file = ""
         self.filtered_nucl_file = "nucl_merged.fasta"
         self.filtered_prot_file = "prot_merged.fasta"
         self.filter_len = 450
@@ -145,6 +146,7 @@ class Options():
         self.aa_translator = "translate"
         self.clustering_java_heap_memory = 16
         self.clustering = "Clustering.jar"
+        self.gene_info = {}
 
 opt = Options()
 cp = 0
@@ -214,7 +216,8 @@ def parse_opt(argv):
                                      "cpu-only",
                                      "ref_seq=",
                                      "forward_hmm=",
-                                     "reverse_hmm="])
+                                     "reverse_hmm=",
+                                     "gene_list="])
     except getopt.error as msg:
         raise Usage(megahit_version_str + '\n' + str(msg))
     if len(opts) == 0:
@@ -306,6 +309,8 @@ def parse_opt(argv):
             opt.presets = value
         elif option == "--graph-only":
             opt.graph_only = True;
+        elif option == "--gene_list":
+            opt.gene_list = value
 
         else:
             raise Usage("Invalid option %s", option)
@@ -688,16 +693,16 @@ def build_lib():
 
     write_cp()
 
-def build_first_graph():
+def build_graph(list_of_k):
     global cp
     phase1_out_threads = max(1, int(opt.num_cpu_threads / 3))
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        count_opt = ["-k", str(opt.k_min),
+        count_opt = ["-k", str(opt.k_current),
                      "-m", str(opt.min_count),
                      "--host_mem", str(opt.host_mem),
                      "--mem_flag", str(opt.mem_flag),
                      "--gpu_mem", str(opt.gpu_mem),
-                     "--output_prefix", graph_prefix(opt.k_min),
+                     "--output_prefix", graph_prefix(opt.k_current),
                      "--num_cpu_threads", str(opt.num_cpu_threads),
                      "--num_output_threads", str(phase1_out_threads),
                      "--read_lib_file", opt.lib]
@@ -710,8 +715,10 @@ def build_first_graph():
         else:
             cmd = [opt.bin_dir + opt.builder, "count"] + count_opt
 
-        # if not_first_k:
-        #     cmd += ["--assist_seq", prev.contig.fa]
+        if list_of_k and opt.k_current!=opt.k_min:
+            previous_k = opt.k_list[opt.k_list.index(opt.k_current) - 1]
+            # a set of contigs is used to assist the next graph, how?
+            cmd += ["--assist_seq", opt.combined_contigs_file]
 
         try:
             if opt.kmin_1pass:
@@ -745,90 +752,27 @@ def build_first_graph():
             exit(1)
 
     write_cp()
-    if not opt.kmin_1pass:
-        build_graph(opt.k_min, 0, phase1_out_threads)
-    elif not opt.keep_tmp_files:
-        delete_tmp_after_build(opt.k_min)
 
-def build_graph(kmer_k, kmer_from, num_edge_files):
+def parse_gene_list():
     global cp
-    if (not opt.continue_mode) or (cp > opt.last_cp):
-        build_comm_opt = ["--host_mem", str(opt.host_mem),
-                             "--mem_flag", str(opt.mem_flag),
-                             "--gpu_mem", str(opt.gpu_mem),
-                             "--output_prefix", graph_prefix(kmer_k),
-                             "--num_cpu_threads", str(opt.num_cpu_threads),
-                             "-k", str(kmer_k), 
-                             "--kmer_from", str(kmer_from),
-                             "--num_edge_files", str(num_edge_files)]
+    with open(opt.gene_list, "r") as f:
+        for line in f:
+            words = line.split()
+            # print (words)
+            opt.gene_info[words[0]] = [words[1], words[2], words[3]]
+            # print (opt.gene_info)
+    f.close()
 
-        build_cmd = [opt.bin_dir + opt.builder, "seq2sdbg"] + build_comm_opt
-
-        file_size = 0
-
-        if (os.path.exists(graph_prefix(kmer_k) + ".edges.0")):
-            build_cmd += ["--input_prefix", graph_prefix(kmer_k)]
-            file_size += os.path.getsize(graph_prefix(kmer_k) + ".edges.0")
-
-        if (os.path.exists(contig_prefix(kmer_from) + ".contigs.fa")):
-            build_cmd += ["--contig", contig_prefix(kmer_from) + ".contigs.fa"]
-
-        if (os.path.exists(contig_prefix(kmer_from) + ".addi.fa")):
-            build_cmd += ["--addi_contig", contig_prefix(kmer_from) + ".addi.fa"]
-            file_size += os.path.getsize(contig_prefix(kmer_from) + ".addi.fa")
-
-        if (os.path.exists(contig_prefix(kmer_from) + ".local.fa")):
-            build_cmd += ["--local_contig", contig_prefix(kmer_from) + ".local.fa"]
-            file_size += os.path.getsize(contig_prefix(kmer_from) + ".local.fa")
-
-        if file_size == 0:
-            return False # not build
-
-        if not opt.no_mercy and kmer_k == opt.k_min:
-            build_cmd.append("--need_mercy")
-
-        try:
-            logging.info("--- [%s] Building graph for k = %d ---" % (datetime.now().strftime("%c"), kmer_k))
-            logging.debug("%s" % (" ").join(build_cmd))
-
-            p = subprocess.Popen(build_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
-            while True:
-                line = p.stderr.readline().rstrip()
-                if not line:
-                    break;
-                logging.debug(line)
-
-            ret_code = p.wait()
-
-            if ret_code != 0:
-                logging.error("Error occurs when running \"builder build\" for k = %d; please refer to %s for detail" % (kmer_k, log_file_name()))
-                logging.error("[Exit code %d]" % ret_code)
-                exit(ret_code)
-
-        except OSError as o:
-            if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-                logging.error("Error: sub-program builder not found, please recompile MEGAHIT")
-            exit(1)
-        except KeyboardInterrupt:
-            p.terminate()
-            exit(1)
-
-    write_cp()
-    if not opt.keep_tmp_files:
-        delete_tmp_after_build(kmer_k)
-    return True
-
-def find_seed():
+def find_seed(gene):
     global cp
-    parameter = [str(opt.aligned_ref), str(opt.se[0]), str(opt.k_list[0]+1)]
+    parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1)]
     cmd = [opt.bin_dir + opt.seed_finder] + parameter
 
     try:
-        logging.info("--- [%s] Finding starting kmers for k = %d ---" % (datetime.now().strftime("%c"), opt.k_list[0]))
+        logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, opt.k_current))
         logging.debug("cmd: %s" % (" ").join(cmd))
         seed_file = opt.out_dir + "starting_kmers_unsorted.txt"
-        final_seed_file = opt.out_dir + "starting_kmers.txt"
+        final_seed_file = opt.out_dir + str(opt.k_current) + "_starting_kmers.txt"
         with open(seed_file, "w") as starting_kmers:
             p = subprocess.Popen(cmd, stdout=starting_kmers, stderr=subprocess.PIPE)
         ret_code = p.wait()
@@ -850,19 +794,32 @@ def find_seed():
 
 def search_contigs():
     global cp
-    parameter = [graph_prefix(opt.k_list[0]), str(opt.for_hmm), str(opt.rev_hmm), opt.out_dir + "starting_kmers.txt", str(opt.num_cpu_threads)]
+    parameter = [graph_prefix(opt.k_current), "gene_list.txt", opt.out_dir + str(opt.k_current) + "_starting_kmers.txt", opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
     cmd = [opt.bin_dir + opt.contig_searcher] + parameter
 
     try:
-        logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), opt.k_list[0]))
+        logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
         logging.debug("cmd: %s" % (" ").join(cmd))
-        opt.raw_contigs_file = opt.out_dir + "raw_contigs_" + str(opt.k_list[0]) + ".txt"
-        with open(opt.raw_contigs_file, "w") as raw_contigs:
-            p = subprocess.Popen(cmd, stdout=raw_contigs, stderr=subprocess.PIPE)
+        p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
         p.wait()
+
+        cmd2 = "cat " + opt.out_dir + str(opt.k_current) + "_raw_contigs*"
+        opt.combined_contigs_file = opt.out_dir + str(opt.k_current) + "_combined_contigs" + ".fasta"
+        with open(opt.combined_contigs_file, "w") as raw_contigs:
+            p = subprocess.Popen(cmd2, shell = True, stdout=raw_contigs, stderr=subprocess.PIPE)
+        ret_code = p.wait()
+        raw_contigs.close()
+    
+        if ret_code == 0:
+            cmd3 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + opt.megahit_toolkit + " readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
+            logging.debug(cmd3)
+            stat_file = opt.combined_contigs_file + ".info"
+            with open(stat_file, "w") as raw_contigs_info:
+                p = subprocess.Popen(cmd3, shell = True, stdout=raw_contigs_info, stderr=subprocess.PIPE)
+            p.wait()
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program kingAssembler_search not found, please recompile MEGAHIT-GT")
+            logging.error("Error: sub-program megahit_toolkit not found, please recompile MEGAHIT-GT")
         exit(1)
 
     except KeyboardInterrupt:
@@ -880,7 +837,7 @@ def filter_contigs():
         logging.debug("cmd: %s" % (" ").join(cmd))
         nucl_file = opt.out_dir + opt.filtered_nucl_file
         with open(nucl_file, "w") as filtered_nucl_contigs:
-            with open(opt.raw_contigs_file, "r") as raw_contigs:
+            with open(opt.combined_contigs_file, "r") as raw_contigs:
                 p = subprocess.Popen(cmd, stdin=raw_contigs, stdout=filtered_nucl_contigs, stderr=subprocess.PIPE)
         p.wait()
     except OSError as o:
@@ -949,19 +906,25 @@ def main(argv = None):
 
         write_lib()
         build_lib()
+        parse_gene_list()
 
-        # if k_list contains only one k, then no iteration; otherwise we iterate through them
         if len(opt.k_list) == 1:
-            build_first_graph()
+            opt.k_current = opt.k_list[0]
+            build_graph(False)
             find_seed()
             search_contigs()
             filter_contigs()
             translate_to_aa()
         elif len(opt.k_list) > 1:
-            # iterations; Dinghua
-            build_first_graph()
-            # this command can provide "# of reads size" format output, but Dinghua should add a space to the second line of output in readstat file
-            # `megahit_toolkit readstat <contigs.fa | head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s`
+            for k in opt.k_list:
+                opt.k_current = k
+                build_graph(True)
+                # for each gene
+                for key in opt.gene_info:
+                    find_seed(key)
+                search_contigs()
+            filter_contigs() # this command only applies to the last iteration, thus, some modification is needed
+            translate_to_aa()
 
 
         logging.info("--- [%s] ALL DONE. Time elapsed: %f seconds ---" % (datetime.now().strftime("%c"), time.time() - start_time))
