@@ -24,7 +24,7 @@ int main(int argc, char **argv) {
 	int num_threads = 0;
 
 	if (argc > 5) {
-		num_threads = atoi(argv[4]);
+		num_threads = atoi(argv[5]);
 	}
 	if (num_threads == 0) {
 		num_threads = omp_get_max_threads();
