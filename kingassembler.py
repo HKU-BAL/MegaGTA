@@ -794,7 +794,7 @@ def find_seed(gene):
 
 def search_contigs():
     global cp
-    parameter = [graph_prefix(opt.k_current), "gene_list.txt", opt.out_dir + str(opt.k_current), opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
+    parameter = [graph_prefix(opt.k_current), opt.gene_list, opt.out_dir + str(opt.k_current), opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
     cmd = [opt.bin_dir + opt.contig_searcher] + parameter
 
     try:
