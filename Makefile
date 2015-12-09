@@ -17,9 +17,9 @@ endif
 #-------------------------------------------------------------------------------
 # standalone headers
 #-------------------------------------------------------------------------------
-STANDALONE_H = a_star_node.h hash.h hash_map.h hash_map_st.h \
-			   hash_set.h hash_set_st.h functional.h \
-			   khash.h kseq.h pool.h hash_table.h hash_table_st.h \
+STANDALONE_H = a_star_node.h hash.h hash_map_st.h \
+			   pool_st.h hash_set_st.h functional.h \
+			   khash.h kseq.h hash_table_st.h \
 			   utils.h hmmer3b_parser.h kmer.h mem_file_checker-inl.h\
 			   most_probable_path.h nucl_kmer_generator.h profile_hmm.h \
 			   definitions.h prot_kmer_generator.h rank_and_select.h sdbg_multi_io.h

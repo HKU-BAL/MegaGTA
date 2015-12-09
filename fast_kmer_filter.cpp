@@ -5,7 +5,7 @@
 #include "kseq.h"
 #include "prot_kmer_generator.h"
 #include "nucl_kmer.h"
-#include "hash_set.h"
+#include "hash_set_st.h"
 #include <string.h>
 #include <string>
 #include <vector>
@@ -55,8 +55,8 @@ struct Sequence {
 	}
 };
 
-void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size);
-void ProcessSequence(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size);
+void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSetST<ProtKmer> &kmerSet, const int &kmer_size);
+void ProcessSequence(const string &sequence, const string &name, const string &comment, HashSetST<ProtKmer> &kmerSet, const int &kmer_size);
 char Comp(char c);
 void RevComp(string &s);
 
@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
     int kmer_size = stoi(argv[3]);
     int batch_size = 1 * 1024 * 1024;
 
-    HashSet<ProtKmer> kmerSet;
+    HashSetST<ProtKmer> kmerSet;
     //add kmers from reference to hash set
     while (kseq_read(seq) >= 0) { 
         ProtKmerGenerator kmers = ProtKmerGenerator(seq->seq.s, kmer_size/3, true);
@@ -131,7 +131,7 @@ int main(int argc, char **argv) {
     gzclose(fp);
 	return 0;
 }
-void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSet<ProtKmer> &kmerSet, const int &kmer_size) {
+void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSetST<ProtKmer> &kmerSet, const int &kmer_size) {
 	vector<ProtKmerGenerator> kmer_gens;
 	seq::NTSequence nts = seq::NTSequence("", "", sequence);
 	for (int i = 0; i < 3; i++) {
@@ -141,7 +141,7 @@ void ProcessSequenceMulti(const string &sequence, const string &name, const stri
     for (int gen = 0; gen < 3; gen++) {
     	while (kmer_gens[gen].hasNext()) {
     		kmer = kmer_gens[gen].next();
-    		HashSet<ProtKmer>::iterator iter = kmerSet.find(kmer);
+    		HashSetST<ProtKmer>::iterator iter = kmerSet.find(kmer);
     		if (iter != NULL) {
     			int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
     			printf("rplB\tSRR172903.7702200\t357259128\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), 1, kmer.decodePacked().c_str(), iter->model_position);
