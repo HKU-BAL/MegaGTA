@@ -1,6 +1,6 @@
 #include <zlib.h>
-#include "src/sequence/NTSequence.h"
-#include "src/sequence/AASequence.h"
+#include "sequence/NTSequence.h"
+#include "sequence/AASequence.h"
 #include "kseq.h"
 #include <algorithm>
 

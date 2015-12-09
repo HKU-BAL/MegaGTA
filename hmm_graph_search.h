@@ -10,8 +10,8 @@
 #include <math.h>
 #include <queue>
 #include <algorithm>
-#include "src/sequence/NTSequence.h"
-#include "src/sequence/AASequence.h"
+#include "sequence/NTSequence.h"
+#include "sequence/AASequence.h"
 #include "node_enumerator.h"
 #include <iostream>
 #include <stdio.h>

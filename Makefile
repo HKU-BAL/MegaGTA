@@ -34,7 +34,7 @@ all:  kingAssembler_find_seed kingAssembler_search
 #-------------------------------------------------------------------------------
 # Codon library
 #-------------------------------------------------------------------------------
-LIB_CODON_DIR = src/sequence
+LIB_CODON_DIR = sequence
 LIB_CODON = $(LIB_CODON_DIR)/AASequence.o
 LIB_CODON += $(LIB_CODON_DIR)/AminoAcid.o
 LIB_CODON += $(LIB_CODON_DIR)/CodingSequence.o

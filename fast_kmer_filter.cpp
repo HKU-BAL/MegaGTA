@@ -9,8 +9,8 @@
 #include <string.h>
 #include <string>
 #include <vector>
-#include "src/sequence/NTSequence.h"
-#include "src/sequence/AASequence.h"
+#include "sequence/NTSequence.h"
+#include "sequence/AASequence.h"
 
 #include <time.h>
 #include <sys/time.h>
