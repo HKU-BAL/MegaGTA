@@ -25,7 +25,7 @@
 
 
 #ifndef PACKAGE_VERSION
-    #define PACKAGE_VERSION "v1.0.1"
+    #define PACKAGE_VERSION "v0.1-alpha"
 #endif
 
 typedef uint16_t multi_t;

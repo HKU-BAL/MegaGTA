@@ -491,7 +491,7 @@ def check_bin():
 def get_version():
     global megahit_version_str
     megahit_version_str = "MEGAHIT " + \
-                          subprocess.Popen([opt.bin_dir + "megahit_asm_core", "dumpversion"],
+                          subprocess.Popen([opt.bin_dir + "megahit_sdbg_build", "dumpversion"],
                                            stdout=subprocess.PIPE).communicate()[0].rstrip().decode('utf-8')
 
 def check_builder():
