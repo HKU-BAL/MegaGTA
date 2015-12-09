@@ -119,7 +119,6 @@ class Options():
         self.temp_dir = self.out_dir + "tmp/"
         self.contig_dir = self.out_dir + "intermediate_contigs/"
         self.keep_tmp_files = False
-        self.builder = "megahit_sdbg_build"
         self.use_gpu = False
         self.mem_flag = 1
         self.continue_mode = False;
@@ -142,7 +141,6 @@ class Options():
         self.filtered_nucl_file = "nucl_merged.fasta"
         self.filtered_prot_file = "prot_merged.fasta"
         self.filter_len = 450
-        self.megahit_toolkit = "megahit_toolkit"
         self.aa_translator = "translate"
         self.clustering_java_heap_memory = 16
         self.clustering = "Clustering.jar"
@@ -272,9 +270,6 @@ def parse_opt(argv):
             opt.low_local_ratio = float(value)
         elif option == "--keep-tmp-files":
             opt.keep_tmp_files = True
-        elif option == "--use-gpu":
-            opt.use_gpu = True
-            opt.builder = "megahit_sdbg_build_gpu"
         elif option == "--mem-flag":
             opt.mem_flag = int(value)
         elif option in ("-v", "--version"):
@@ -484,22 +479,15 @@ def prepare_continue():
     print("Continue from check point " + str(opt.last_cp), file=sys.stderr)
 
 def check_bin():
-    for subprogram in ["megahit_sdbg_build"]:
+    for subprogram in ["megahit_gt"]:
         if not os.path.exists(opt.bin_dir + subprogram):
             raise Usage("Cannot find sub-program \"" + subprogram + "\", please recompile.")
 
 def get_version():
     global megahit_version_str
-    megahit_version_str = "MEGAHIT " + \
-                          subprocess.Popen([opt.bin_dir + "megahit_sdbg_build", "dumpversion"],
+    megahit_version_str = "MEGAHIT-GT " + \
+                          subprocess.Popen([opt.bin_dir + "megahit_gt", "dumpversion"],
                                            stdout=subprocess.PIPE).communicate()[0].rstrip().decode('utf-8')
-
-def check_builder():
-    if not os.path.exists(opt.bin_dir + opt.builder):
-        usg = megahit_version_str + '\n' + "Cannot find sub-program \"%s\", please recompile." % opt.builder
-        if opt.use_gpu == 0:
-            usg += "\nOr if you want to use the GPU version, please run MEGAHIT with \"--use-gpu\""
-        raise Usage(usg)
 
 def graph_prefix(kmer_k):
     if not os.path.exists(opt.temp_dir + "k" + str(kmer_k)):
@@ -594,7 +582,7 @@ def write_lib():
 def build_lib():
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        build_lib_cmd = [opt.bin_dir + "megahit_asm_core", "buildlib",
+        build_lib_cmd = [opt.bin_dir + "megahit_gt", "buildlib",
                          opt.lib,
                          opt.lib]
 
@@ -707,13 +695,9 @@ def build_graph(list_of_k):
                      "--num_output_threads", str(phase1_out_threads),
                      "--read_lib_file", opt.lib]
 
-        cmd = []
-        if opt.kmin_1pass:
-            cmd = [opt.bin_dir + opt.builder, "read2sdbg"] + count_opt
-            if not opt.no_mercy:
-                cmd.append("--need_mercy")
-        else:
-            cmd = [opt.bin_dir + opt.builder, "count"] + count_opt
+        cmd = [opt.bin_dir + "megahit_gt", "buildgraph"] + count_opt
+        if not opt.no_mercy:
+            cmd.append("--need_mercy")
 
         if list_of_k and opt.k_current!=opt.k_min:
             previous_k = opt.k_list[opt.k_list.index(opt.k_current) - 1]
@@ -722,13 +706,12 @@ def build_graph(list_of_k):
 
         try:
             if opt.kmin_1pass:
-                logging.info("--- [%s] Extracting solid (k+1)-mers and building sdbg for k = %d ---" % (datetime.now().strftime("%c"), opt.k_min))
+                logging.info("--- [%s] Extracting solid (k+1)-mers and building sdbg for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
             else:
-                logging.info("--- [%s] Extracting solid (k+1)-mers for k = %d ---" % (datetime.now().strftime("%c"), opt.k_min))
+                logging.info("--- [%s] Extracting solid (k+1)-mers for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
 
             logging.debug("cmd: %s" % (" ").join(cmd))
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
 
             while True:
                 line = p.stderr.readline().rstrip()
@@ -818,7 +801,7 @@ def search_contigs():
         raw_contigs.close()
 
         if ret_code == 0:
-            cmd3 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + opt.megahit_toolkit + " readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
+            cmd3 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + "megahit_gt readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
             logging.debug(cmd3)
             stat_file = opt.combined_contigs_file + ".info"
             with open(stat_file, "w") as raw_contigs_info:
@@ -826,7 +809,7 @@ def search_contigs():
             p.wait()
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program megahit_toolkit not found, please recompile MEGAHIT-GT")
+            logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
         exit(1)
 
     except KeyboardInterrupt:
@@ -837,7 +820,7 @@ def search_contigs():
 def filter_contigs():
     global cp
     parameter = [str(opt.filter_len)]
-    cmd = [opt.bin_dir + opt.megahit_toolkit, "filterbylen"] + parameter
+    cmd = [opt.bin_dir + "megahit_gt", "filterbylen"] + parameter
 
     try:
         logging.info("--- [%s] Filtering contigs with min_len = %d ---" % (datetime.now().strftime("%c"), opt.filter_len))
@@ -887,7 +870,6 @@ def main(argv = None):
         get_version()
         parse_opt(argv[1:])
         check_opt()
-        check_builder()
         make_out_dir()
 
         logging.basicConfig(level = logging.NOTSET,

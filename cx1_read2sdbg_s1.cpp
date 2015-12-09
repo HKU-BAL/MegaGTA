@@ -28,13 +28,12 @@
 #include "mem_file_checker-inl.h"
 #include "kseq.h"
 #include "utils.h"
-#include "kmer.h"
+#include "megahit_kmer.h"
 #include "packed_reads.h"
 #include "sequence_package.h"
 #include "read_lib_functions-inl.h"
 
 #include "lv2_cpu_sort.h"
-#include "lv2_gpu_functions.h"
 // helping functions
 
 extern void kt_dfor(int n_threads, void (*func)(void *, long, int), void *data, long n);
@@ -116,9 +115,10 @@ void s1_read_input_prepare(read2sdbg_global_t &globals) {
 
     if (globals.assist_seq_file != "") {
         SequenceManager seq_manager;
+        seq_manager.set_readlib_type(SequenceManager::kSingle);
         seq_manager.set_file_type(SequenceManager::kFastxReads);
         seq_manager.set_file(globals.assist_seq_file);
-
+        seq_manager.set_package(&globals.package);
 
         bool reverse_read = true;
         bool append_to_package = true;

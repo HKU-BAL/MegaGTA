@@ -1,6 +1,6 @@
 /*
  *  MEGAHIT
- *  Copyright (C) 2014 - 2015 The University of Hong Kong
+ *  Copyright (C) 2014 - 2015 The University of Hong Kong & L3 Bioinformatics Limited
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 
+#include "megahit_kmer.h"
 
 #ifndef PACKAGE_VERSION
     #define PACKAGE_VERSION "v0.1-alpha"
@@ -52,10 +53,11 @@ static const int kLoop = 0x2;
 
 }
 
-static const int kMaxK = 127;
+static const int kMaxK = 255;
 static const int kUint32PerKmerMaxK = (kMaxK + 1 + 15) / 16;
 static const int kUint64PerIdbaKmerMaxK = (kMaxK * 2 + 16 + 63) / 64;
 
+typedef Kmer<kUint32PerKmerMaxK, uint32_t> GenericKmer;
 
 #define LONG_READS
 
