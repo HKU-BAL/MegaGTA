@@ -85,7 +85,7 @@ public:
 	    	}
 
 	    	//translate to aa
-	    	for (int i = 0; i < packed_codon.size(); ++i) {
+	    	for (int i = 0; i < (int)packed_codon.size(); ++i) {
 	    		int64_t packed = packed_codon[i];
     			// next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
     			if (!forward) {

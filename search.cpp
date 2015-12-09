@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 		HashMapST<AStarNode, AStarNode> term_nodes, term_nodes_rev;
 		
 		#pragma omp parallel for
-		for (int i = 0; i < starting_kmer_storage.size(); ++i) {
+		for (unsigned i = 0; i < starting_kmer_storage.size(); ++i) {
 			search[omp_get_thread_num()].search(starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second, 
 				for_node_enumerator[omp_get_thread_num()], rev_node_enumerator[omp_get_thread_num()], dbg, i, term_nodes, term_nodes_rev, out_file);
 		}

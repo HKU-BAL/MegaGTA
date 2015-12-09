@@ -13,8 +13,8 @@ public:
 	AStarNode *discovered_from;
 	int nucl_emission : 9;
 	double score;
-	char state;
 	int16_t state_no;
+	char state;
 	int fval;
 	double this_node_score;
 	int16_t indels;

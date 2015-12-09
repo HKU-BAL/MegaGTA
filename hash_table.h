@@ -335,7 +335,7 @@ public:
     iterator find(const key_type &key)
     {
         uint64_t hash_value = hash_key(key);
-        // lock_bucket(hash_value);
+        lock_bucket(hash_value);
         uint64_t index = bucket_index_key(key);
         for (node_type *node = buckets_[index]; node; node = node->next)
         {
@@ -345,7 +345,7 @@ public:
                 return iterator(this, node);
             }
         }
-        // unlock_bucket(hash_value);
+        unlock_bucket(hash_value);
         return iterator();
     }
 

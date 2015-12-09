@@ -51,7 +51,7 @@ public:
         }
         memset(dna_map, -1, sizeof(dna_map));
 		for (int i = 0; i < 10; ++i) {
-			dna_map["ACGTNacgtn"[i]] = "1234312343"[i] - '0';
+			dna_map[int("ACGTNacgtn"[i])] = "1234312343"[i] - '0';
 		}
 	}
 
@@ -106,7 +106,7 @@ public:
 	//bugs
 	double scoreStart(ProfileHMM &hmm, string &starting_kmer, int starting_state) {
 		double ret = 0;
-		for (int i = 1; i <= starting_kmer.size(); i++) {
+		for (int i = 1; i <= (int)starting_kmer.size(); i++) {
 			ret += hmm.msc(starting_state + i, starting_kmer[i-1]) + hmm.tsc(starting_state + i - 1, ProfileHMM::MM) - hmm.getMaxMatchEmission(starting_state + i);
 		}
 		return ret;
@@ -114,7 +114,7 @@ public:
 
 	double realScoreStart(ProfileHMM &hmm, string &starting_kmer, int starting_state) {
 		double ret = 0;
-		for (int i = 1; i <= starting_kmer.size(); i++) {
+		for (int i = 1; i <= (int)starting_kmer.size(); i++) {
 			ret += hmm.msc(starting_state + i, starting_kmer[i-1]) + hmm.tsc(starting_state + i - 1, ProfileHMM::MM);
 		}
 		return ret;
@@ -142,12 +142,12 @@ public:
 			RevComp(rc_frame_word);
 			// kmer = NuclKmer(rc_frame_word);
 			for (int i = 0; i < dbg.kmer_k + 1; ++i) {
-				seq[i] = dna_map[rc_frame_word[i]];
+				seq[i] = dna_map[(int)rc_frame_word[i]];
 			}
 		} else {
 			// kmer = NuclKmer(framed_word);
 			for (int i = 0; i < dbg.kmer_k + 1; ++i) {
-				seq[i] = dna_map[framed_word[i]];
+				seq[i] = dna_map[(int)framed_word[i]];
 			}
 		}
 		AStarNode *starting_node_ptr = pool_->construct();
@@ -242,7 +242,7 @@ public:
 					inter_goal_ptr = &curr;
 				}
 				getHighestScoreNode(*inter_goal_ptr, goal_node);
-				fprintf(stderr, "%d\t%d\t%d\t%d\t%d\t%d\tfalse\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
+				fprintf(stderr, "%d\t%zu\t%zu\t%d\t%d\t%d\tfalse\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
 				return true;
 			}
 
@@ -304,7 +304,7 @@ public:
 
 		inter_goal_ptr->partial = 1;
 		getHighestScoreNode(*inter_goal_ptr, goal_node);
-		fprintf(stderr, "%d\t%d\t%d\t%d\t%d\t%d\ttrue\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
+		fprintf(stderr, "%d\t%zu\t%zu\t%d\t%d\t%d\ttrue\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
 		return true;
 	}
 

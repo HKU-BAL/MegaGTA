@@ -18,10 +18,10 @@ class ProtKmerGenerator {
 		ProtKmer next_;
 		bool has_next;
 
+		bool model_only_ = false;
 		int index_;
 		int position_;
 		int cur_model_position_;
-		bool model_only_ = false;
 
 	public:
 		ProtKmerGenerator() {}
@@ -34,7 +34,7 @@ class ProtKmerGenerator {
 				throw std::invalid_argument("K-mer size cannot be larger than 24");
 			}
 
-			if (seq.length() < k) {
+			if ((int)seq.length() < k) {
 				// throw std::invalid_argument("Sequence length is less than the kmer length");
 				has_next = false;
 			}
@@ -56,7 +56,7 @@ class ProtKmerGenerator {
 	private:
 		bool getFirstKmer(int klength) {
 			std::string kmer_str(k_, '\0');
-			while (index_ < bases_.length()) {
+			while (index_ < (int)bases_.length()) {
 				char base = bases_[index_++];
 
 				if (model_only_ && (islower(base) || base == '-' || base == 'X' || base == 'x')) {
@@ -65,8 +65,8 @@ class ProtKmerGenerator {
 					}
 					klength = 0;
 				} else {
-					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[base] != 31 && base != '*'))) {
-						if (next_.ascii_map[base] == 31 && base != 'X') {
+					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[(int)base] != 31 && base != '*'))) {
+						if (next_.ascii_map[(int)base] == 31 && base != 'X') {
 							throw std::domain_error("Unknown prot base");
 						}
 						kmer_str[klength] = base;
@@ -93,7 +93,7 @@ class ProtKmerGenerator {
 				return;
 			}
 
-			while (index_ < bases_.length()) {
+			while (index_ < (int)bases_.length()) {
 				char base = bases_[index_++];
 
 				if (model_only_ && (islower(base) || base == '-' || base == 'X' || base == 'x')) {
@@ -102,8 +102,8 @@ class ProtKmerGenerator {
 					}
 					klength = 0;
 				} else {
-					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[base] != 31 && base != '*'))) {
-						if (next_.ascii_map[base] == 31 && base != 'X') {
+					if (!model_only_ || (model_only_ && (base != '.' && next_.ascii_map[(int)base] != 31 && base != '*'))) {
+						if (next_.ascii_map[(int)base] == 31 && base != 'X') {
 							throw std::invalid_argument("Unknown prot base");
 						}
 						if (base != 'X') {

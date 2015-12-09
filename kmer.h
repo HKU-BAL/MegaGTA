@@ -29,7 +29,7 @@ class Kmer {
 
 	protected:
 		Kmer() {}
-		Kmer(int bits_to_shift, int char_mask, int items_per_bucket, int k) : bits_to_shift(bits_to_shift), char_mask(char_mask), items_per_bucket(items_per_bucket), k(k) {
+		Kmer(int bits_to_shift, int char_mask, int items_per_bucket, int k) : k(k), bits_to_shift(bits_to_shift), char_mask(char_mask), items_per_bucket(items_per_bucket) {
 			l = (k + items_per_bucket - 1) / items_per_bucket;
 			last_fill = items_per_bucket - (items_per_bucket * l - k);
 			uint64_t tmp = 0;
@@ -62,7 +62,7 @@ class Kmer {
 		void initialize(const string &char_kmer) {
 			uint8_t b;
 
-			for (int index = 0; index < char_kmer.size(); ++index) {
+			for (int index = 0; index < (int)char_kmer.size(); ++index) {
 				b = charToByte(char_kmer[index]);
 				if (b == 31) {
 					throw std::invalid_argument("Kmer contains one or more invalid bases");
