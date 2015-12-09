@@ -55,6 +55,7 @@ int main(int argc, char **argv) {
 	}
 
 	for (vector<string>& gene : gene_list) {
+        fprintf(stderr, "START %s\n", gene[0].c_str());
 		ifstream hmm_file (gene[1]);
 		ProfileHMM forward_hmm = ProfileHMM(true);
 		Parser::readHMM(hmm_file, forward_hmm);
@@ -106,6 +107,8 @@ int main(int argc, char **argv) {
 				for_node_enumerator[omp_get_thread_num()], rev_node_enumerator[omp_get_thread_num()], dbg, i, term_nodes, term_nodes_rev, out_file);
 		}
 		fclose(out_file);
+
+        fprintf(stderr, "Done %s\n", gene[0].c_str());
 	}
 
 	return 0;

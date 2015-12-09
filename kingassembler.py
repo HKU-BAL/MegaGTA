@@ -801,15 +801,22 @@ def search_contigs():
         logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
         logging.debug("cmd: %s" % (" ").join(cmd))
         p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+
+        while True:
+            line = p.stderr.readline().rstrip()
+            if not line:
+                break;
+            logging.debug(line)
         p.wait()
 
         cmd2 = "cat " + opt.out_dir + str(opt.k_current) + "_raw_contigs*"
+        logging.debug("cmd: %s" % (" ").join(cmd2))
         opt.combined_contigs_file = opt.out_dir + str(opt.k_current) + "_combined_contigs" + ".fasta"
         with open(opt.combined_contigs_file, "w") as raw_contigs:
             p = subprocess.Popen(cmd2, shell = True, stdout=raw_contigs, stderr=subprocess.PIPE)
         ret_code = p.wait()
         raw_contigs.close()
-    
+
         if ret_code == 0:
             cmd3 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + opt.megahit_toolkit + " readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
             logging.debug(cmd3)
@@ -884,9 +891,9 @@ def main(argv = None):
         make_out_dir()
 
         logging.basicConfig(level = logging.NOTSET,
-                            format = '%(message)s',
-                            filename = log_file_name(),
-                            filemode = 'a')
+                format = '%(message)s',
+                filename = log_file_name(),
+                filemode = 'a')
 
         console = logging.StreamHandler()
         console.setLevel(logging.INFO)
