@@ -55,15 +55,18 @@ LIB_CODON += $(LIB_CODON_DIR)/Nucleotide.o
 
 #-------------------------------------------------------------------------------
 # CPU Applications
-#-------------------------------------------------------------------------------
+#-------------------------------------------------------------------------------i
+
+all: kingAssembler_find_seed kingAssembler_search translate
+
 kingAssembler_find_seed: fast_kmer_filter.cpp nucl_kmer.o prot_kmer.o city.o $(LIB_CODON) $(DEPS)
 	$(CXX) $(CXXFLAGS) fast_kmer_filter.cpp nucl_kmer.o prot_kmer.o city.o $(LIB_CODON) $(LIB) -o kingAssembler_find_seed
 
 kingAssembler_search: search.cpp succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o $(LIB_CODON) $(DEPS)
 	$(CXX) $(CXXFLAGS) search.cpp succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o $(LIB) $(LIB_CODON) -o kingAssembler_search
 
-# megahit_toolkit: $(TOOLKIT) $(DEPS)
-# 	$(CXX) $(CXXFLAGS) $(TOOLKIT) $(LIB) -o megahit_toolkit
+translate: translate.cpp $(LIB_CODON) $(DEPS)
+	$(CXX) $(CXXFLAGS) translate.cpp $(LIB_CODON) $(LIB) -o translate
 
 .PHONY:
 clean:
