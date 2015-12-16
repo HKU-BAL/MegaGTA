@@ -1,0 +1,3 @@
+[submodule "RDPTools"]
+	path = RDPTools
+	url = https://github.com/rdpstaff/RDPTools
