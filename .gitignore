@@ -10,8 +10,4 @@
 !sequence/*.h
 !sequence/*.sh
 !share/RDPTools/*
-share/RDPTools/lib/
-share/RDPTools/*~
-share/RDPTools/*.jar
-share/RDPTools/Xander_assembler
 
