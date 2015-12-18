@@ -11,7 +11,7 @@ KSEQ_INIT(gzFile, gzread)
 
 using namespace std;
 
-int main(int argc, char **argv) {
+int translate(int argc, char **argv) {
 	if (argc == 1) {
 		fprintf(stderr, "Usage: %s <nucl_seq> \n", argv[0]);
 		exit(1);

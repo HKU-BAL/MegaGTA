@@ -11,6 +11,8 @@ int read_stat(int argc, char** argv);
 int find_start(int argc, char **argv);
 int search(int argc, char **argv);
 int filter_by_len(int argc, char **argv);
+int translate(int argc, char **argv);
+
 
 void show_help(const char *program_name) {
 	fprintf(stderr, "Usage: %s <sub_program> [sub options]\n"
@@ -41,9 +43,11 @@ int main(int argc, char **argv) {
     } else if (strcmp(argv[1], "filterbylen") == 0) {
         return filter_by_len(argc - 1, argv + 1);
     } else if (strcmp(argv[1], "find") == 0) {
-		// return find_start(argc - 1 , argv + 1);
+		return find_start(argc - 1 , argv + 1);
 	} else if (strcmp(argv[1], "search") == 0) {
-		// return search(argc - 1, argv + 1);
+		return search(argc - 1, argv + 1);
+	} else if (strcmp(argv[1], "translate") == 0) {
+		return translate(argc - 1, argv + 1);
 	} else if (strcmp(argv[1], "dumpversion") == 0) {
         printf("%s\n", PACKAGE_VERSION);
         return 0;

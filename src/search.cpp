@@ -14,7 +14,7 @@
 
 using namespace std;
 
-int main(int argc, char **argv) {
+int search(int argc, char **argv) {
 
 	if (argc < 5) {
 		fprintf(stderr, "Usage: %s <succinct_dbg> <gene_list> <starting_kmers> <output_info> [num_threads=0]\n", argv[0]);
