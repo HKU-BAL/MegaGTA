@@ -212,7 +212,6 @@ def parse_opt(argv):
                                      "max-read-len=",
                                      "no-low-local",
                                      "cpu-only",
-                                     "ref_seq=",
                                      "forward_hmm=",
                                      "reverse_hmm=",
                                      "gene_list="])
@@ -286,8 +285,6 @@ def parse_opt(argv):
             continue # historical options, just ignore
         elif option in ("-r", "--read"):
             opt.se += value.split(",")
-        elif option == "--ref_seq":
-            opt.aligned_ref = value
         elif option == "--forward_hmm":
             opt.for_hmm = value
         elif option == "--reverse_hmm":
