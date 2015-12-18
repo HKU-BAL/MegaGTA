@@ -29,7 +29,7 @@ DEPS = Makefile $(STANDALONE_H)
 #-------------------------------------------------------------------------------
 # CPU version
 #-------------------------------------------------------------------------------
-all:  kingAssembler_find_seed kingAssembler_search
+# all:  kingAssembler_find_seed kingAssembler_search
 
 #-------------------------------------------------------------------------------
 # Codon library
@@ -57,24 +57,18 @@ LIB_CODON += $(LIB_CODON_DIR)/Nucleotide.o
 # CPU Applications
 #-------------------------------------------------------------------------------
 
-all: kingAssembler_find_seed kingAssembler_search translate megahit_gt
-
-kingAssembler_find_seed: fast_kmer_filter.cpp nucl_kmer.o prot_kmer.o city.o $(LIB_CODON) $(DEPS)
-	$(CXX) $(CXXFLAGS) fast_kmer_filter.cpp nucl_kmer.o prot_kmer.o city.o $(LIB_CODON) $(LIB) -o kingAssembler_find_seed
-
-kingAssembler_search: search.cpp succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o $(LIB_CODON) $(DEPS)
-	$(CXX) $(CXXFLAGS) search.cpp succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o $(LIB) $(LIB_CODON) -o kingAssembler_search
-
-translate: translate.cpp $(LIB_CODON) $(DEPS)
-	$(CXX) $(CXXFLAGS) translate.cpp $(LIB_CODON) $(LIB) -o translate
+all: megahit_gt
 
 megahit_gt: megahit_gt.cpp build_graph.cpp cx1_read2sdbg_s1.cpp cx1_read2sdbg.h cx1_read2sdbg_s2.cpp kthread.cpp \
             build_read_lib.cpp sequence_manager.o sequence_package.h \
-			read_stat.cpp filter_by_len.cpp\
+			read_stat.cpp filter_by_len.cpp search.cpp fast_kmer_filter.cpp translate.cpp \
+			succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o prot_kmer.o $(LIB_CODON) \
 			options_description.o $(DEP)
 	$(CXX) $(CXXFLAGS) megahit_gt.cpp build_graph.cpp cx1_read2sdbg_s1.cpp cx1_read2sdbg_s2.cpp kthread.cpp \
 	                   build_read_lib.cpp sequence_manager.o \
-			           read_stat.cpp filter_by_len.cpp options_description.o $(LIB) -o megahit_gt
+			           read_stat.cpp filter_by_len.cpp search.cpp fast_kmer_filter.cpp translate.cpp \
+			           options_description.o succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o \
+			           prot_kmer.o $(LIB) $(LIB_CODON) -o megahit_gt
 
 .PHONY:
 clean:

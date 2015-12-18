@@ -61,7 +61,7 @@ char Comp(char c);
 void RevComp(string &s);
 
 
-int main(int argc, char **argv) {
+int find_start(int argc, char **argv) {
 	ProtKmer::setUp();
 	NuclKmer::setUp();
 

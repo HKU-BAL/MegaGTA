@@ -135,13 +135,10 @@ class Options():
         self.inpipe = dict()
         self.presets = ""
         self.graph_only = False
-        self.seed_finder = "kingAssembler_find_seed"
-        self.contig_searcher = "kingAssembler_search"
         self.combined_contigs_file = ""
         self.filtered_nucl_file = "nucl_merged.fasta"
         self.filtered_prot_file = "prot_merged.fasta"
         self.filter_len = 450
-        self.aa_translator = "translate"
         self.clustering_java_heap_memory = 16
         self.clustering = "Clustering.jar"
         self.gene_info = {}
@@ -746,7 +743,7 @@ def parse_gene_list():
 def find_seed(gene):
     global cp
     parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1)]
-    cmd = [opt.bin_dir + opt.seed_finder] + parameter
+    cmd = [opt.bin_dir + "megahit_gt", "find"] + parameter
 
     try:
         logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, opt.k_current))
@@ -765,7 +762,7 @@ def find_seed(gene):
 
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program kingAssembler_find_seed not found, please recompile MEGAHIT-GT")
+            logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
         exit(1)
     except KeyboardInterrupt:
         p.terminate()
@@ -775,7 +772,7 @@ def find_seed(gene):
 def search_contigs():
     global cp
     parameter = [graph_prefix(opt.k_current), opt.gene_list, opt.out_dir + str(opt.k_current), opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
-    cmd = [opt.bin_dir + opt.contig_searcher] + parameter
+    cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
 
     try:
         logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
@@ -839,7 +836,7 @@ def filter_contigs():
 def translate_to_aa():
     global cp
     parameter = [opt.out_dir + opt.filtered_nucl_file]
-    cmd = [opt.bin_dir + opt.aa_translator] + parameter
+    cmd = [opt.bin_dir + "megahit_gt", "translate"] + parameter
 
     try:
         logging.info("--- [%s] Translating nucl contigs to aa contigs ---" % (datetime.now().strftime("%c")))
