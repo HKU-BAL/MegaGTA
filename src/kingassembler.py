@@ -742,7 +742,7 @@ def parse_gene_list():
 
 def find_seed(gene):
     global cp
-    parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1)]
+    parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1), str(opt.num_cpu_threads)]
     cmd = [opt.bin_dir + "megahit_gt", "find"] + parameter
 
     try:
@@ -853,6 +853,24 @@ def translate_to_aa():
         exit(1)
     write_cp()
 
+def post_processing():
+    global cp
+    # cmd3 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + "megahit_gt readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
+    cmd = ["cd", opt.out_dir, ";", "mkdir", "for_post_proc"]
+    try:
+        logging.info("--- [%s] Preparing for post-processing ---" % (datetime.now().strftime("%c")))
+        logging.debug("cmd: %s" % (" ").join(cmd))
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        p.wait()
+    except OSError as o:
+        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+            logging.error("Error: XXXX, please recompile MEGAHIT-GT")
+        exit(1)
+    except KeyboardInterrupt:
+        p.terminate()
+        exit(1)
+    write_cp()
+
 def main(argv = None):
     if argv is None:
         argv = sys.argv
@@ -898,6 +916,7 @@ def main(argv = None):
             search_contigs()
             filter_contigs()
             translate_to_aa()
+            post_processing()
         elif len(opt.k_list) > 1:
             for k in opt.k_list:
                 opt.k_current = k
@@ -908,6 +927,7 @@ def main(argv = None):
                 search_contigs()
             filter_contigs() # this command only applies to the last iteration, thus, some modification is needed
             translate_to_aa()
+            post_processing()
 
 
         logging.info("--- [%s] ALL DONE. Time elapsed: %f seconds ---" % (datetime.now().strftime("%c"), time.time() - start_time))

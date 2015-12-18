@@ -9,6 +9,7 @@
 #include <string.h>
 #include <string>
 #include <vector>
+#include <omp.h>
 #include "sequence/NTSequence.h"
 #include "sequence/AASequence.h"
 
@@ -56,7 +57,6 @@ struct Sequence {
 };
 
 void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSetST<ProtKmer> &kmerSet, const int &kmer_size);
-void ProcessSequence(const string &sequence, const string &name, const string &comment, HashSetST<ProtKmer> &kmerSet, const int &kmer_size);
 char Comp(char c);
 void RevComp(string &s);
 
@@ -66,9 +66,19 @@ int find_start(int argc, char **argv) {
 	NuclKmer::setUp();
 
 	if (argc == 1) {
-		fprintf(stderr, "Usage: %s <ref_seq> <read_seq> <k_size>\n", argv[0]);
+		fprintf(stderr, "Usage: %s <ref_seq> <read_seq> <k_size> [num_threads=0]\n", argv[0]);
 		exit(1);
 	}
+
+    int num_threads = 0;
+
+    if (argc > 4) {
+        num_threads = atoi(argv[4]);
+    }
+    if (num_threads == 0) {
+        num_threads = omp_get_max_threads();
+    }
+    omp_set_num_threads(num_threads);
 
 	gzFile fp = gzopen(argv[1], "r");
 	gzFile fp2 = gzopen(argv[2], "r");
