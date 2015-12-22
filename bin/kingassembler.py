@@ -135,10 +135,13 @@ class Options():
         self.inpipe = dict()
         self.presets = ""
         self.graph_only = False
+        self.seed_finder = "kingAssembler_find_seed"
+        self.contig_searcher = "kingAssembler_search"
         self.combined_contigs_file = ""
         self.filtered_nucl_file = "nucl_merged.fasta"
         self.filtered_prot_file = "prot_merged.fasta"
         self.filter_len = 450
+        self.aa_translator = "translate"
         self.clustering_java_heap_memory = 16
         self.clustering = "Clustering.jar"
         self.gene_info = {}
@@ -742,8 +745,8 @@ def parse_gene_list():
 
 def find_seed(gene):
     global cp
-    parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1), str(opt.num_cpu_threads)]
-    cmd = [opt.bin_dir + "megahit_gt", "find"] + parameter
+    parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1)]
+    cmd = [opt.bin_dir + opt.seed_finder] + parameter
 
     try:
         logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, opt.k_current))
@@ -762,7 +765,7 @@ def find_seed(gene):
 
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
+            logging.error("Error: sub-program kingAssembler_find_seed not found, please recompile MEGAHIT-GT")
         exit(1)
     except KeyboardInterrupt:
         p.terminate()
@@ -772,7 +775,7 @@ def find_seed(gene):
 def search_contigs():
     global cp
     parameter = [graph_prefix(opt.k_current), opt.gene_list, opt.out_dir + str(opt.k_current), opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
-    cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
+    cmd = [opt.bin_dir + opt.contig_searcher] + parameter
 
     try:
         logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
@@ -811,7 +814,7 @@ def search_contigs():
         exit(1)
     write_cp()
 
-def filter_contigs(input_file, output_file):
+def filter_contigs():
     global cp
     parameter = [str(opt.filter_len)]
     cmd = [opt.bin_dir + "megahit_gt", "filterbylen"] + parameter
@@ -819,9 +822,9 @@ def filter_contigs(input_file, output_file):
     try:
         logging.info("--- [%s] Filtering contigs with min_len = %d ---" % (datetime.now().strftime("%c"), opt.filter_len))
         logging.debug("cmd: %s" % (" ").join(cmd))
-        # nucl_file = opt.out_dir + opt.filtered_nucl_file
-        with open(output_file, "w") as filtered_nucl_contigs:
-            with open(input_file, "r") as raw_contigs:
+        nucl_file = opt.out_dir + opt.filtered_nucl_file
+        with open(nucl_file, "w") as filtered_nucl_contigs:
+            with open(opt.combined_contigs_file, "r") as raw_contigs:
                 p = subprocess.Popen(cmd, stdin=raw_contigs, stdout=filtered_nucl_contigs, stderr=subprocess.PIPE)
         p.wait()
     except OSError as o:
@@ -833,39 +836,20 @@ def filter_contigs(input_file, output_file):
         exit(1)
     write_cp()
 
-def translate_to_aa(input_file, output_file):
+def translate_to_aa():
     global cp
-    cmd = [opt.bin_dir + "megahit_gt", "translate"] + input_file
+    parameter = [opt.out_dir + opt.filtered_nucl_file]
+    cmd = [opt.bin_dir + opt.aa_translator] + parameter
 
     try:
         logging.info("--- [%s] Translating nucl contigs to aa contigs ---" % (datetime.now().strftime("%c")))
         logging.debug("cmd: %s" % (" ").join(cmd))
-        with open(output_file, "w") as filtered_prot_contigs:
+        with open(opt.out_dir + opt.filtered_prot_file, "w") as filtered_prot_contigs:
             p = subprocess.Popen(cmd, stdout=filtered_prot_contigs, stderr=subprocess.PIPE)
         p.wait()
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
             logging.error("Error: sub-program translate not found, please recompile MEGAHIT-GT")
-        exit(1)
-    except KeyboardInterrupt:
-        p.terminate()
-        exit(1)
-    write_cp()
-
-def post_processing():
-    global cp
-    try:
-        logging.info("--- [%s] Preparing for post-processing ---" % (datetime.now().strftime("%c")))
-        post_proc_directory = opt.out_dir + "for_post_proc/"
-        os.makedirs(post_proc_directory)
-        for key in opt.gene_info:
-            os.makedirs(post_proc_directory + key)
-            # shutil.copyfile(opt.out_dir+str(opt.k_current)+"_raw_contigs_"+key+".fasta", post_proc_directory+key+"/nucl_merged.fasta")
-            filter_contigs(opt.out_dir+str(opt.k_current)+"_raw_contigs_"+key+".fasta", post_proc_directory+key+"/nucl_merged.fasta")
-            translate_to_aa([post_proc_directory+key+"/nucl_merged.fasta"], post_proc_directory+key+"/prot_merged.fasta")
-    except OSError as o:
-        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: XXXX, please recompile MEGAHIT-GT")
         exit(1)
     except KeyboardInterrupt:
         p.terminate()
@@ -915,9 +899,8 @@ def main(argv = None):
             build_graph(False)
             find_seed()
             search_contigs()
-            # filter_contigs()
-            # translate_to_aa()
-            post_processing()
+            filter_contigs()
+            translate_to_aa()
         elif len(opt.k_list) > 1:
             for k in opt.k_list:
                 opt.k_current = k
@@ -926,9 +909,8 @@ def main(argv = None):
                 for key in opt.gene_info:
                     find_seed(key)
                 search_contigs()
-            # filter_contigs()
-            # translate_to_aa()
-            post_processing()
+            filter_contigs() # this command only applies to the last iteration, thus, some modification is needed
+            translate_to_aa()
 
 
         logging.info("--- [%s] ALL DONE. Time elapsed: %f seconds ---" % (datetime.now().strftime("%c"), time.time() - start_time))
