@@ -1,7 +1,7 @@
 #!/bin/bash -login
 
 if [ $# -ne 1 ]; then
-        echo Usage: gene 
+        echo "Usage: $0 <gene_resource.txt>"
         exit 1
 fi
 
