@@ -23,7 +23,7 @@ void show_help(const char *program_name) {
 	                "       search                A* search\n"
                     "       dumpversion           dump MEGAHIT-GT version\n"
                     "       readstat              get sequence stat from fastq/a files\n"
-                    "       filterbylen           filter contigs by length"
+                    "       filterbylen           filter contigs by length\n"
                     "       translate             translate DNA to Protein\n",
 	                program_name);
 }
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
         return read_stat(argc - 1, argv + 1);
     } else if (strcmp(argv[1], "filterbylen") == 0) {
         return filter_by_len(argc - 1, argv + 1);
-    } else if (strcmp(argv[1], "find") == 0) {
+    } else if (strcmp(argv[1], "findstart") == 0) {
 		return find_start(argc - 1 , argv + 1);
 	} else if (strcmp(argv[1], "search") == 0) {
 		return search(argc - 1, argv + 1);

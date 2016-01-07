@@ -743,7 +743,7 @@ def parse_gene_list():
 def find_seed(gene):
     global cp
     parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1), str(opt.num_cpu_threads)]
-    cmd = [opt.bin_dir + "megahit_gt", "find"] + parameter
+    cmd = [opt.bin_dir + "megahit_gt", "findstart"] + parameter
 
     try:
         logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, opt.k_current))
@@ -913,10 +913,9 @@ def main(argv = None):
         if len(opt.k_list) == 1:
             opt.k_current = opt.k_list[0]
             build_graph(False)
-            find_seed()
+            for key in opt.gene_info:
+                find_seed(key)
             search_contigs()
-            # filter_contigs()
-            # translate_to_aa()
             post_processing()
         elif len(opt.k_list) > 1:
             for k in opt.k_list:
@@ -926,8 +925,6 @@ def main(argv = None):
                 for key in opt.gene_info:
                     find_seed(key)
                 search_contigs()
-            # filter_contigs()
-            # translate_to_aa()
             post_processing()
 
 
