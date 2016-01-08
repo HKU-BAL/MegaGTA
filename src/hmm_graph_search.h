@@ -55,7 +55,7 @@ public:
 		}
 	}
 
-	void search(string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
+	void search(string &gene_name, string &starting_kmer, ProfileHMM &forward_hmm, ProfileHMM &reverse_hmm, int &start_state, NodeEnumerator &forward_enumerator, 
 		NodeEnumerator &reverse_enumerator, SuccinctDBG &dbg, int count, HashMapST<AStarNode, AStarNode> &term_nodes, HashMapST<AStarNode, AStarNode> &term_nodes_rev, FILE * out_file) {
 
 		 // if (start_state + starting_kmer.size() <= forward_hmm.modelLength() + 1) {
@@ -74,7 +74,7 @@ public:
 			deleteAStarNodes();
 			RevComp(left_max_seq);
 
-			fprintf(out_file, ">test_rplB_contig_%d_contig_%d\n%s%s%s\n", count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
+			fprintf(out_file, ">%s_contig_%d_contig_%d\n%s%s%s\n", gene_name.c_str(), count*2, count*2+1, left_max_seq.c_str(), starting_kmer.c_str(), right_max_seq.c_str());	
 		// }
 	}
 

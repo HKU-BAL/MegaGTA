@@ -695,7 +695,6 @@ def build_graph(list_of_k):
 
         if list_of_k and opt.k_current!=opt.k_min:
             previous_k = opt.k_list[opt.k_list.index(opt.k_current) - 1]
-            # a set of contigs is used to assist the next graph, how?
             cmd += ["--assist_seq", opt.combined_contigs_file]
 
         try:
@@ -786,20 +785,37 @@ def search_contigs():
             logging.debug(line)
         p.wait()
 
-        cmd2 = "cat " + opt.out_dir + str(opt.k_current) + "_raw_contigs*"
-        logging.debug("cmd: %s" % (" ").join(cmd2))
+        # do this before combining
+        chimeric_removal_directory = opt.out_dir + str(opt.k_current) + "_contigs_chimera_removal/"
+        os.makedirs(chimeric_removal_directory)
+        post_proc_directory = chimeric_removal_directory + "for_post_proc/"
+        os.makedirs(post_proc_directory)
+        for key in opt.gene_info:
+            os.makedirs(post_proc_directory + key)
+            filter_contigs(opt.out_dir + str(opt.k_current) + "_raw_contigs_" + key + ".fasta", post_proc_directory + key + "/nucl_merged.fasta")
+            translate_to_aa([post_proc_directory + key + "/nucl_merged.fasta"], post_proc_directory + key + "/prot_merged.fasta")
+
+        # path = os.path.realpath(chimeric_removal_directory)
+        # print (path)
+        cmd2 = "bash " + opt.bin_dir + "../bin/megahit_gt_post_proc.sh" +" -d "+ os.path.realpath(chimeric_removal_directory) + " -h 16G -c 0.01"
+        logging.debug(cmd2)
+        p = subprocess.Popen(cmd2, shell = True, stderr=subprocess.PIPE)
+        p.wait()
+
+        cmd3 = "cat " + post_proc_directory + "*/cluster/" + "_final_nucl.fasta"
+        logging.debug("cmd: %s" % (" ").join(cmd3))
         opt.combined_contigs_file = opt.out_dir + str(opt.k_current) + "_combined_contigs" + ".fasta"
         with open(opt.combined_contigs_file, "w") as raw_contigs:
-            p = subprocess.Popen(cmd2, shell = True, stdout=raw_contigs, stderr=subprocess.PIPE)
+            p = subprocess.Popen(cmd3, shell = True, stdout=raw_contigs, stderr=subprocess.PIPE)
         ret_code = p.wait()
         raw_contigs.close()
 
         if ret_code == 0:
-            cmd3 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + "megahit_gt readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
-            logging.debug(cmd3)
+            cmd4 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + "megahit_gt readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
+            logging.debug(cmd4)
             stat_file = opt.combined_contigs_file + ".info"
             with open(stat_file, "w") as raw_contigs_info:
-                p = subprocess.Popen(cmd3, shell = True, stdout=raw_contigs_info, stderr=subprocess.PIPE)
+                p = subprocess.Popen(cmd4, shell = True, stdout=raw_contigs_info, stderr=subprocess.PIPE)
             p.wait()
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
@@ -925,6 +941,7 @@ def main(argv = None):
                 for key in opt.gene_info:
                     find_seed(key)
                 search_contigs()
+                # add one more `post processing` step for the combined contigs file
             post_processing()
 
 

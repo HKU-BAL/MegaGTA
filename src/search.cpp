@@ -103,7 +103,7 @@ int search(int argc, char **argv) {
 		
 		#pragma omp parallel for
 		for (unsigned i = 0; i < starting_kmer_storage.size(); ++i) {
-			search[omp_get_thread_num()].search(starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second, 
+			search[omp_get_thread_num()].search(gene[0], starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second, 
 				for_node_enumerator[omp_get_thread_num()], rev_node_enumerator[omp_get_thread_num()], dbg, i, term_nodes, term_nodes_rev, out_file);
 		}
 		fclose(out_file);
