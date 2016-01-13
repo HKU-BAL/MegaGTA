@@ -620,7 +620,9 @@ void SuccinctDBG::LoadFromMultiFile(const char *dbg_name, bool need_multiplicity
         need_to_free_mul_ = true;
     }
     else {
-        need_to_free_mul_ = false;
+        is_multi_1_ = (unsigned long long *) MallocAndCheck(sizeof(unsigned long long) * word_needed_last, __FILE__, __LINE__);
+        memset(is_multi_1_, 0, sizeof(unsigned long long) * word_needed_last);
+        need_to_free_mul_ = true;
     }
 
     unsigned long long packed_w = 0;
@@ -665,6 +667,8 @@ void SuccinctDBG::LoadFromMultiFile(const char *dbg_name, bool need_multiplicity
                 edge_multi_[i] = item >> 8;
             else
                 edge_large_multi_[i] = item >> 8;
+        } else {
+            is_multi_1_[i / 64] |= (unsigned long long)((item >> 8) <= 1) << (i % 64); 
         }
 
         if (UNLIKELY((item >> 8) == kMulti2Sp)) {

@@ -16,7 +16,6 @@ public:
 	int16_t state_no;
 	char state;
 	int fval;
-	double this_node_score;
 	int16_t indels;
 	double real_score;
 	int16_t length;

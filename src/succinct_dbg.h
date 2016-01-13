@@ -45,7 +45,7 @@ class SuccinctDBG {
     int kmer_k;
 
   public:
-    SuccinctDBG(): need_to_free_(false), need_to_free_mul_(false), edge_multi_(NULL), edge_large_multi_(NULL) { }
+    SuccinctDBG(): need_to_free_(false), need_to_free_mul_(false), edge_multi_(NULL), edge_large_multi_(NULL), is_multi_1_(NULL) { }
     ~SuccinctDBG() {
         if (need_to_free_) {
             free(last_);
@@ -143,6 +143,12 @@ class SuccinctDBG {
         }
     }
 
+    bool IsMulti1(int64_t edge_id) {
+        if (is_multi_1_)
+            return (is_multi_1_[edge_id / 64] >> (edge_id % 64)) & 1;
+        else return EdgeMultiplicity(edge_id) <= 1;
+    }
+
     int64_t Forward(int64_t edge_id) { // the last edge edge_id points to
         uint8_t a = GetW(edge_id);
 
@@ -198,6 +204,9 @@ class SuccinctDBG {
                 free(edge_large_multi_);
                 edge_large_multi_ = NULL;
             }
+            if (is_multi_1_ != NULL) {
+                free(is_multi_1_);
+            }
         }
 
         need_to_free_mul_ = false;
@@ -216,6 +225,7 @@ class SuccinctDBG {
     multi2_t *edge_multi_;
     multi_t *edge_large_multi_;
     khash_t(k64v16) *large_multi_h_;
+    unsigned long long *is_multi_1_;
 
     long long f_[kAlphabetSize + 2];
     long long rank_f_[kAlphabetSize + 2]; // = rs_last_.Rank(f_[i] - 1)

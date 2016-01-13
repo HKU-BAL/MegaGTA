@@ -22,7 +22,8 @@ STANDALONE_H = a_star_node.h hash.h hash_map_st.h \
 			   khash.h kseq.h hash_table_st.h \
 			   utils.h hmmer3b_parser.h kmer.h mem_file_checker-inl.h\
 			   most_probable_path.h nucl_kmer_generator.h profile_hmm.h \
-			   definitions.h prot_kmer_generator.h rank_and_select.h sdbg_multi_io.h
+			   definitions.h prot_kmer_generator.h rank_and_select.h sdbg_multi_io.h \
+			   node_enumerator.h
 
 DEPS = Makefile $(STANDALONE_H)
 
@@ -59,14 +60,14 @@ LIB_CODON += $(LIB_CODON_DIR)/Nucleotide.o
 
 all: megahit_gt
 
-megahit_gt: megahit_gt.cpp build_graph.cpp cx1_read2sdbg_s1.cpp cx1_read2sdbg.h cx1_read2sdbg_s2.cpp kthread.cpp \
-            build_read_lib.cpp sequence_manager.o sequence_package.h \
-			read_stat.cpp filter_by_len.cpp search.cpp fast_kmer_filter.cpp translate.cpp \
+megahit_gt: megahit_gt.o build_graph.o cx1_read2sdbg_s1.o cx1_read2sdbg.h cx1_read2sdbg_s2.o kthread.o \
+            build_read_lib.o sequence_manager.o sequence_package.h \
+			read_stat.o filter_by_len.o search.o fast_kmer_filter.o translate.o \
 			succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o prot_kmer.o $(LIB_CODON) \
 			options_description.o $(DEP)
-	$(CXX) $(CXXFLAGS) megahit_gt.cpp build_graph.cpp cx1_read2sdbg_s1.cpp cx1_read2sdbg_s2.cpp kthread.cpp \
-	                   build_read_lib.cpp sequence_manager.o \
-			           read_stat.cpp filter_by_len.cpp search.cpp fast_kmer_filter.cpp translate.cpp \
+	$(CXX) $(CXXFLAGS) megahit_gt.o build_graph.o cx1_read2sdbg_s1.o cx1_read2sdbg_s2.o kthread.o \
+	                   build_read_lib.o sequence_manager.o \
+			           read_stat.o filter_by_len.o search.o fast_kmer_filter.o translate.o \
 			           options_description.o succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o \
 			           prot_kmer.o $(LIB) $(LIB_CODON) -o megahit_gt
 

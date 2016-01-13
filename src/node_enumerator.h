@@ -9,14 +9,19 @@
 #include <vector>
 #include "codon.h"
 #include <set>
+#include <cmath>
+#include <algorithm>
 
 using namespace std;
+
+#define MIN3(x, y, z) std::min(x, std::min(y, z))
 
 class NodeEnumerator
 {
 private:
 	static const int SCALE = 10000;
 	static constexpr double hweight = 2.0;
+    static constexpr double kLowCovPenalty = -log(0.6); // TODO: make it an program option
 	uint8_t next_nucl;
 	char emission;
 	double match_trans;
@@ -39,6 +44,7 @@ public:
 	void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg) {
 		enumerateNodes(ret, curr, forward, dbg, NULL);
 	}
+
 	void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg, AStarNode *child_node) {
 		ret.clear();
 		next_state = curr.state_no + 1;
@@ -79,6 +85,9 @@ public:
 							             ((dbg.GetEdgeOutLabel(next_node[i])-1) << 6) |
 							             ((dbg.GetEdgeOutLabel(next_node_2[j])-1) << 3) |
 							             (dbg.GetEdgeOutLabel(next_node_3[k])-1);
+                        packed |= (dbg.IsMulti1(next_node[i]) &&
+                                   dbg.IsMulti1(next_node_2[j]) &&
+                                   dbg.IsMulti1(next_node_3[k])) << 9;
 						packed_codon.push_back(packed);
 					}
 				}
@@ -102,9 +111,10 @@ public:
     				continue;
     			}
 
+                double lowCovPenalty = (packed & (1 << 9)) ? kLowCovPenalty : 0;
     			next = AStarNode(&curr, next_state, 'm');
 
-	    		next.real_score = curr.real_score + match_trans + hmm->msc(next_state, emission);
+	    		next.real_score = curr.real_score + (match_trans + hmm->msc(next_state, emission)) - lowCovPenalty;
 	    		if (next.real_score >= curr.max_score) {
 	    			next.max_score = next.real_score;
 	    			next.negative_count = 0;
@@ -116,9 +126,9 @@ public:
 	    		next.nucl_emission = packed & ((1 << 9) - 1);
 	    		
 	    		next.emission = emission;
-	    		next.this_node_score = match_trans + hmm->msc(next_state, emission) - max_match_emission;
+	    		double this_node_score = (match_trans + hmm->msc(next_state, emission)) - lowCovPenalty - max_match_emission;
 	    		next.length = curr.length + 1;
-	    		next.score = curr.score + next.this_node_score;
+	    		next.score = curr.score + this_node_score;
 	    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('m', next_state)));
 	    		next.indels = curr.indels;
 
@@ -137,16 +147,16 @@ public:
 	    		if (curr.state != 'd') {
 	    			next = AStarNode(&curr, curr.state_no, 'i');
 
-		    		next.real_score = curr.real_score + ins_trans + hmm->isc(next_state, emission);
+		    		next.real_score = curr.real_score + (ins_trans + hmm->isc(next_state, emission)) - lowCovPenalty;
 		    		next.max_score = curr.max_score;
 		    		next.negative_count = curr.negative_count + 1;
 
 		    		next.nucl_emission = packed & ((1 << 9) - 1);
 
 		    		next.emission = emission;
-		    		next.this_node_score = ins_trans + hmm->isc(next_state, emission);
+		    		this_node_score = (ins_trans + hmm->isc(next_state, emission)) - lowCovPenalty;
 		    		next.length = curr.length + 1;
-		    		next.score = curr.score + next.this_node_score;
+		    		next.score = curr.score + this_node_score;
 		    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('i', curr.state_no)));
 		    		next.indels = curr.indels + 1;
 
@@ -171,9 +181,9 @@ public:
 
 	    		next.nucl_emission = (4 << 6) | (4 << 3) | 4;
 	    		next.emission = '-';
-	    		next.this_node_score = del_trans - max_match_emission;
+	    		double this_node_score = del_trans - max_match_emission;
 	    		next.length = curr.length;
-	    		next.score = curr.score + next.this_node_score;
+	    		next.score = curr.score + this_node_score;
 	    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('d', next_state)));
 	    		next.indels = curr.indels + 1;
 

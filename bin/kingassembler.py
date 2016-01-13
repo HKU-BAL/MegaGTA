@@ -135,13 +135,10 @@ class Options():
         self.inpipe = dict()
         self.presets = ""
         self.graph_only = False
-        self.seed_finder = "kingAssembler_find_seed"
-        self.contig_searcher = "kingAssembler_search"
         self.combined_contigs_file = ""
         self.filtered_nucl_file = "nucl_merged.fasta"
         self.filtered_prot_file = "prot_merged.fasta"
         self.filter_len = 450
-        self.aa_translator = "translate"
         self.clustering_java_heap_memory = 16
         self.clustering = "Clustering.jar"
         self.gene_info = {}
@@ -698,7 +695,6 @@ def build_graph(list_of_k):
 
         if list_of_k and opt.k_current!=opt.k_min:
             previous_k = opt.k_list[opt.k_list.index(opt.k_current) - 1]
-            # a set of contigs is used to assist the next graph, how?
             cmd += ["--assist_seq", opt.combined_contigs_file]
 
         try:
@@ -745,8 +741,8 @@ def parse_gene_list():
 
 def find_seed(gene):
     global cp
-    parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1)]
-    cmd = [opt.bin_dir + opt.seed_finder] + parameter
+    parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1), str(opt.num_cpu_threads)]
+    cmd = [opt.bin_dir + "megahit_gt", "findstart"] + parameter
 
     try:
         logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, opt.k_current))
@@ -765,7 +761,7 @@ def find_seed(gene):
 
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program kingAssembler_find_seed not found, please recompile MEGAHIT-GT")
+            logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
         exit(1)
     except KeyboardInterrupt:
         p.terminate()
@@ -775,7 +771,7 @@ def find_seed(gene):
 def search_contigs():
     global cp
     parameter = [graph_prefix(opt.k_current), opt.gene_list, opt.out_dir + str(opt.k_current), opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
-    cmd = [opt.bin_dir + opt.contig_searcher] + parameter
+    cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
 
     try:
         logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
@@ -789,20 +785,37 @@ def search_contigs():
             logging.debug(line)
         p.wait()
 
-        cmd2 = "cat " + opt.out_dir + str(opt.k_current) + "_raw_contigs*"
-        logging.debug("cmd: %s" % (" ").join(cmd2))
+        # do this before combining
+        chimeric_removal_directory = opt.out_dir + str(opt.k_current) + "_contigs_chimera_removal/"
+        os.makedirs(chimeric_removal_directory)
+        post_proc_directory = chimeric_removal_directory + "for_post_proc/"
+        os.makedirs(post_proc_directory)
+        for key in opt.gene_info:
+            os.makedirs(post_proc_directory + key)
+            filter_contigs(opt.out_dir + str(opt.k_current) + "_raw_contigs_" + key + ".fasta", post_proc_directory + key + "/nucl_merged.fasta")
+            translate_to_aa([post_proc_directory + key + "/nucl_merged.fasta"], post_proc_directory + key + "/prot_merged.fasta")
+
+        # path = os.path.realpath(chimeric_removal_directory)
+        # print (path)
+        cmd2 = "bash " + opt.bin_dir + "../bin/megahit_gt_post_proc.sh" +" -d "+ os.path.realpath(chimeric_removal_directory) + " -h 16G -c 0.01"
+        logging.debug(cmd2)
+        p = subprocess.Popen(cmd2, shell = True, stderr=subprocess.PIPE)
+        p.wait()
+
+        cmd3 = "cat " + post_proc_directory + "*/cluster/" + "_final_nucl.fasta"
+        logging.debug("cmd: %s" % (" ").join(cmd3))
         opt.combined_contigs_file = opt.out_dir + str(opt.k_current) + "_combined_contigs" + ".fasta"
         with open(opt.combined_contigs_file, "w") as raw_contigs:
-            p = subprocess.Popen(cmd2, shell = True, stdout=raw_contigs, stderr=subprocess.PIPE)
+            p = subprocess.Popen(cmd3, shell = True, stdout=raw_contigs, stderr=subprocess.PIPE)
         ret_code = p.wait()
         raw_contigs.close()
 
         if ret_code == 0:
-            cmd3 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + "megahit_gt readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
-            logging.debug(cmd3)
+            cmd4 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + "megahit_gt readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
+            logging.debug(cmd4)
             stat_file = opt.combined_contigs_file + ".info"
             with open(stat_file, "w") as raw_contigs_info:
-                p = subprocess.Popen(cmd3, shell = True, stdout=raw_contigs_info, stderr=subprocess.PIPE)
+                p = subprocess.Popen(cmd4, shell = True, stdout=raw_contigs_info, stderr=subprocess.PIPE)
             p.wait()
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
@@ -814,7 +827,7 @@ def search_contigs():
         exit(1)
     write_cp()
 
-def filter_contigs():
+def filter_contigs(input_file, output_file):
     global cp
     parameter = [str(opt.filter_len)]
     cmd = [opt.bin_dir + "megahit_gt", "filterbylen"] + parameter
@@ -822,9 +835,9 @@ def filter_contigs():
     try:
         logging.info("--- [%s] Filtering contigs with min_len = %d ---" % (datetime.now().strftime("%c"), opt.filter_len))
         logging.debug("cmd: %s" % (" ").join(cmd))
-        nucl_file = opt.out_dir + opt.filtered_nucl_file
-        with open(nucl_file, "w") as filtered_nucl_contigs:
-            with open(opt.combined_contigs_file, "r") as raw_contigs:
+        # nucl_file = opt.out_dir + opt.filtered_nucl_file
+        with open(output_file, "w") as filtered_nucl_contigs:
+            with open(input_file, "r") as raw_contigs:
                 p = subprocess.Popen(cmd, stdin=raw_contigs, stdout=filtered_nucl_contigs, stderr=subprocess.PIPE)
         p.wait()
     except OSError as o:
@@ -836,20 +849,39 @@ def filter_contigs():
         exit(1)
     write_cp()
 
-def translate_to_aa():
+def translate_to_aa(input_file, output_file):
     global cp
-    parameter = [opt.out_dir + opt.filtered_nucl_file]
-    cmd = [opt.bin_dir + opt.aa_translator] + parameter
+    cmd = [opt.bin_dir + "megahit_gt", "translate"] + input_file
 
     try:
         logging.info("--- [%s] Translating nucl contigs to aa contigs ---" % (datetime.now().strftime("%c")))
         logging.debug("cmd: %s" % (" ").join(cmd))
-        with open(opt.out_dir + opt.filtered_prot_file, "w") as filtered_prot_contigs:
+        with open(output_file, "w") as filtered_prot_contigs:
             p = subprocess.Popen(cmd, stdout=filtered_prot_contigs, stderr=subprocess.PIPE)
         p.wait()
     except OSError as o:
         if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
             logging.error("Error: sub-program translate not found, please recompile MEGAHIT-GT")
+        exit(1)
+    except KeyboardInterrupt:
+        p.terminate()
+        exit(1)
+    write_cp()
+
+def post_processing():
+    global cp
+    try:
+        logging.info("--- [%s] Preparing for post-processing ---" % (datetime.now().strftime("%c")))
+        post_proc_directory = opt.out_dir + "for_post_proc/"
+        os.makedirs(post_proc_directory)
+        for key in opt.gene_info:
+            os.makedirs(post_proc_directory + key)
+            # shutil.copyfile(opt.out_dir+str(opt.k_current)+"_raw_contigs_"+key+".fasta", post_proc_directory+key+"/nucl_merged.fasta")
+            filter_contigs(opt.out_dir+str(opt.k_current)+"_raw_contigs_"+key+".fasta", post_proc_directory+key+"/nucl_merged.fasta")
+            translate_to_aa([post_proc_directory+key+"/nucl_merged.fasta"], post_proc_directory+key+"/prot_merged.fasta")
+    except OSError as o:
+        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+            logging.error("Error: XXXX, please recompile MEGAHIT-GT")
         exit(1)
     except KeyboardInterrupt:
         p.terminate()
@@ -897,10 +929,10 @@ def main(argv = None):
         if len(opt.k_list) == 1:
             opt.k_current = opt.k_list[0]
             build_graph(False)
-            find_seed()
+            for key in opt.gene_info:
+                find_seed(key)
             search_contigs()
-            filter_contigs()
-            translate_to_aa()
+            post_processing()
         elif len(opt.k_list) > 1:
             for k in opt.k_list:
                 opt.k_current = k
@@ -909,8 +941,8 @@ def main(argv = None):
                 for key in opt.gene_info:
                     find_seed(key)
                 search_contigs()
-            filter_contigs() # this command only applies to the last iteration, thus, some modification is needed
-            translate_to_aa()
+                # add one more `post processing` step for the combined contigs file
+            post_processing()
 
 
         logging.info("--- [%s] ALL DONE. Time elapsed: %f seconds ---" % (datetime.now().strftime("%c"), time.time() - start_time))
