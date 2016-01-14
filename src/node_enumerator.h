@@ -21,7 +21,7 @@ class NodeEnumerator
 private:
 	static const int SCALE = 10000;
 	static constexpr double hweight = 2.0;
-    static constexpr double kLowCovPenalty = -log(0.6); // TODO: make it an program option
+    static constexpr double kLowCovPenalty = -log(0.5); // TODO: make it an program option
 	uint8_t next_nucl;
 	char emission;
 	double match_trans;
