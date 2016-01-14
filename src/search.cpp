@@ -16,6 +16,41 @@
 
 using namespace std;
 
+void pruneLowDepthPath(SuccinctDBG &dbg) {
+    int pruneLen = dbg.kmer_k * 2 + 1;
+    long long nPath = 0, nEdge = 0;
+    for (int64_t i = 0; i < dbg.size; ++i) {
+        if (dbg.IsValidEdge(i) && dbg.IsMulti1(i)) {
+            int64_t prev = dbg.UniquePrevEdge(i);
+            if (prev != -1 && !dbg.IsMulti1(prev) && dbg.UniqueNextEdge(prev) == -1) {
+                int64_t x = i;
+                bool toBeDel = true;
+                vector<int64_t> v = {x};
+                for (int j = 0; j <= pruneLen; ++j) {
+                    if (j == pruneLen) { toBeDel = false; break; }
+                    x = dbg.UniqueNextEdge(x);
+                    if (x == -1) { toBeDel = false; break; }
+                    if (dbg.UniquePrevEdge(x) == -1) {
+                        if (dbg.IsMulti1(x)) { toBeDel = false; }
+                        break;
+                    }
+                    v.push_back(x);
+                }
+
+                if (toBeDel) {
+                    for (unsigned j = 0; j < v.size(); ++j) {
+                        dbg.SetInvalidEdge(v[j]);
+                    }
+                    nPath++;
+                    nEdge += v.size();
+                }
+            }
+        }
+    }
+
+    fprintf(stderr, "Path: %lld, Edge: %lld\n", nPath, nEdge);
+}
+
 int search(int argc, char **argv) {
 
 	if (argc < 5) {
@@ -37,6 +72,8 @@ int search(int argc, char **argv) {
 	HMMGraphSearch::setUp();
 	SuccinctDBG dbg;
 	dbg.LoadFromMultiFile(argv[1], false);
+
+    // pruneLowDepthPath(dbg);
 
     // -----refactor it to a list base read/write function
     ifstream gene_list_file (argv[2]);

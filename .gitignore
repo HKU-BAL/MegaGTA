@@ -2,6 +2,7 @@ ompiled Object files
 */*.slo
 */*.lo
 */*.o
+*/*/*.o
 */*.obj
 
 # Compiled Dynamic libraries

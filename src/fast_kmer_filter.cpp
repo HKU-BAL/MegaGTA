@@ -110,7 +110,7 @@ int find_start(int argc, char **argv) {
     		// timer.start();
     		count = 0;
     		#pragma omp parallel for schedule(dynamic, 1)
-	    	for (int i = 0; i < batch_size; i++) {
+	    	 for (int i = 0; i < batch_size; i++) {
 	    	// vector<ProtKmerGenerator> kmer_gens;
 			   	if ((int)sequence_storage[i].sequence_.size() >= kmer_size) {
 			   		ProcessSequenceMulti(sequence_storage[i].sequence_, sequence_storage[i].name_,sequence_storage[i].comment_, kmerSet, kmer_size);

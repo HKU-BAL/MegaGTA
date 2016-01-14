@@ -13,7 +13,7 @@ HMMALIGN=/nas5/ykhuang/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmalign
 
 while getopts "d:h:c:" option; do
 	case "${option}" in
-		d) WORKDIR="${OPTARG}/for_post_proc";; # get parameters from config file if specified
+		d) WORKDIR="${OPTARG}";; # get parameters from config file if specified
 		h) MAX_JVM_HEAP=${OPTARG};;
 		c) DIST_CUTOFF=${OPTARG};;
 	esac
