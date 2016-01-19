@@ -71,7 +71,10 @@ megahit_gt: megahit_gt.o build_graph.o cx1_read2sdbg_s1.o cx1_read2sdbg.h cx1_re
 			           options_description.o succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o \
 			           prot_kmer.o $(LIB) $(LIB_CODON) -o megahit_gt
 
-.PHONY:
+path_viewer: path_viewer.cpp succinct_dbg.o
+	$(CXX) $(CXXFLAGS)  path_viewer.cpp succinct_dbg.o -o path_viewer $(LIB)
+
+PHONY:
 clean:
 	-rm -fr *.o \
 		$(LIB_CODON) \

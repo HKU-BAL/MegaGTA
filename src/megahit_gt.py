@@ -633,7 +633,7 @@ def search_contigs():
         post_proc_directory = opt.out_dir + str(opt.k_current) + "_contigs/"
         mkdir(post_proc_directory)
         for key in opt.gene_info:
-            os.makedirs(post_proc_directory + key)
+            mkdir(post_proc_directory + key)
             filter_contigs(opt.out_dir + str(opt.k_current) + "_raw_contigs_" + key + ".fasta", post_proc_directory + key + "/nucl_merged.fasta")
             translate_to_aa([post_proc_directory + key + "/nucl_merged.fasta"], post_proc_directory + key + "/prot_merged.fasta")
 
