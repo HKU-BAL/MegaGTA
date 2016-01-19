@@ -142,3 +142,4 @@ class Kmer {
 };
 
 #endif
+

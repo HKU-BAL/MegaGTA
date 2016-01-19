@@ -233,4 +233,3 @@ template <const unsigned kNumWords, typename T> inline void swap(Kmer<kNumWords,
 }
 
 #endif
-

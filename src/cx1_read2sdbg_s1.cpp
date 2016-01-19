@@ -98,6 +98,9 @@ void s1_read_input_prepare(read2sdbg_global_t &globals) {
     int64_t num_bases, num_reads;
     GetBinaryLibSize(globals.read_lib_file, num_bases, num_reads);
 
+    globals.num_short_reads = num_reads;
+    globals.num_short_read_bases = num_bases;
+
     if (globals.assist_seq_file != "") {
         FILE *assist_seq_info = OpenFileAndCheck((globals.assist_seq_file + ".info").c_str(), "r");
         long long num_ass_bases, num_ass_seq;
@@ -112,6 +115,8 @@ void s1_read_input_prepare(read2sdbg_global_t &globals) {
     globals.package.reserve_bases(num_bases);
 
     ReadBinaryLibs(globals.read_lib_file, globals.package, globals.lib_info, is_reverse);
+    // set up these figures before reading assist seq
+    globals.max_read_length = globals.package.max_read_len();
 
     if (globals.assist_seq_file != "") {
         SequenceManager seq_manager;
@@ -128,7 +133,7 @@ void s1_read_input_prepare(read2sdbg_global_t &globals) {
         seq_manager.clear();
     }
 
-    globals.max_read_length = globals.package.max_read_len();
+    globals.package.BuildLookup();
     globals.num_reads = globals.package.size();
 
     xlog("%ld reads, %d max read length, %lld total bases\n", globals.num_reads, globals.max_read_length, globals.package.base_size());
@@ -146,13 +151,13 @@ void s1_read_input_prepare(read2sdbg_global_t &globals) {
     globals.num_k1_per_read = globals.max_read_length - globals.kmer_k;
 
     if (globals.kmer_freq_threshold == 1) {
-        globals.is_solid.reset(globals.num_k1_per_read * globals.num_reads, 1);
+        // do not need to count solid kmers
+        globals.mem_packed_reads = globals.package.size_in_byte();
     }
     else {
-        globals.is_solid.reset(globals.num_k1_per_read * globals.num_reads);
+        globals.is_solid.reset(globals.num_k1_per_read * globals.num_short_reads);
+        globals.mem_packed_reads = DivCeiling(globals.num_k1_per_read * globals.num_short_reads, 8) + globals.package.size_in_byte();
     }
-
-    globals.mem_packed_reads = DivCeiling(globals.num_k1_per_read * globals.num_reads, 8) + globals.package.size_in_byte();
 
     int64_t mem_low_bound = globals.mem_packed_reads
                             + kNumBuckets * sizeof(int64_t) * (globals.num_cpu_threads * 3 + 1)
@@ -379,7 +384,7 @@ void s1_init_global_and_set_cx1(read2sdbg_global_t &globals) {
     // --- initialize output mercy files ---
     globals.num_mercy_files = 1;
 
-    while (globals.num_mercy_files * 10485760LL < globals.num_reads && globals.num_mercy_files < 64) {
+    while (globals.num_mercy_files * 10485760LL < globals.num_short_reads && globals.num_mercy_files < 64) {
         globals.num_mercy_files <<= 1;
     }
 

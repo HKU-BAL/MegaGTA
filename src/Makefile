@@ -60,16 +60,12 @@ LIB_CODON += $(LIB_CODON_DIR)/Nucleotide.o
 
 all: megahit_gt
 
-megahit_gt: megahit_gt.o build_graph.o cx1_read2sdbg_s1.o cx1_read2sdbg.h cx1_read2sdbg_s2.o kthread.o \
+megahit_gt: megahit_gt.o assembler.o unitig_graph.o assembly_algorithms.o build_graph.o cx1_read2sdbg_s1.o cx1_read2sdbg.h cx1_read2sdbg_s2.o kthread.o \
             build_read_lib.o sequence_manager.o sequence_package.h \
 			read_stat.o filter_by_len.o search.o fast_kmer_filter.o translate.o \
 			succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o prot_kmer.o $(LIB_CODON) \
 			options_description.o $(DEP)
-	$(CXX) $(CXXFLAGS) megahit_gt.o build_graph.o cx1_read2sdbg_s1.o cx1_read2sdbg_s2.o kthread.o \
-	                   build_read_lib.o sequence_manager.o \
-			           read_stat.o filter_by_len.o search.o fast_kmer_filter.o translate.o \
-			           options_description.o succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o \
-			           prot_kmer.o $(LIB) $(LIB_CODON) -o megahit_gt
+	$(CXX) $(CXXFLAGS) megahit_gt.o assembler.o unitig_graph.o assembly_algorithms.o build_graph.o cx1_read2sdbg_s1.o cx1_read2sdbg_s2.o kthread.o sequence_manager.o build_read_lib.o read_stat.o filter_by_len.o search.o fast_kmer_filter.o translate.o options_description.o succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o prot_kmer.o $(LIB) $(LIB_CODON) -o megahit_gt
 
 path_viewer: path_viewer.cpp succinct_dbg.o
 	$(CXX) $(CXXFLAGS)  path_viewer.cpp succinct_dbg.o -o path_viewer $(LIB)
@@ -78,4 +74,4 @@ PHONY:
 clean:
 	-rm -fr *.o \
 		$(LIB_CODON) \
-		kingAssembler_find_seed kingAssembler_search
+		megahit_gt

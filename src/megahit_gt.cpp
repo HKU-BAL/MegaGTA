@@ -12,6 +12,7 @@ int find_start(int argc, char **argv);
 int search(int argc, char **argv);
 int filter_by_len(int argc, char **argv);
 int translate(int argc, char **argv);
+int main_assemble(int argc, char **argv);
 
 
 void show_help(const char *program_name) {
@@ -19,6 +20,7 @@ void show_help(const char *program_name) {
 					"    sub-programs:\n"
                     "       buildlib              build read library\n"
 	                "       buildgraph            build the SdBG\n"
+                    "       denovo                de novo assemble contigs from SDBG\n"
 	                "       findstart             find starting kmers\n"
 	                "       search                A* search\n"
                     "       dumpversion           dump MEGAHIT-GT version\n"
@@ -51,6 +53,8 @@ int main(int argc, char **argv) {
 	} else if (strcmp(argv[1], "dumpversion") == 0) {
         printf("%s\n", PACKAGE_VERSION);
         return 0;
+    } else if (strcmp(argv[1], "denovo") == 0) {
+        return main_assemble(argc - 1, argv + 1);
     } else {
 		show_help(argv[0]);
 		exit(1);
