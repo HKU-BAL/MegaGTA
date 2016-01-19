@@ -110,7 +110,7 @@ void s1_read_input_prepare(read2sdbg_global_t &globals) {
         num_bases += num_ass_bases;
         num_reads += num_ass_seq;
     }
-    
+
     globals.package.reserve_num_seq(num_reads);
     globals.package.reserve_bases(num_bases);
 

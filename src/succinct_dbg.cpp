@@ -385,7 +385,7 @@ int SuccinctDBG::NextNodes(int64_t node_id, int64_t next[]) {
 int SuccinctDBG::PrevNodes(int64_t node_id, int64_t prev[]) {
     int64_t prev_edge = Backward(node_id);
     int ind = 0;
-    
+
     if (IsValidEdge(prev_edge)) {
         prev[ind++] = GetLastIndex(prev_edge);
     }
@@ -529,9 +529,14 @@ int SuccinctDBG::Label(int64_t edge_or_node_id, uint8_t *seq) {
 
 int64_t SuccinctDBG::IndexBinarySearchEdge(uint8_t *seq) {
     int64_t node = IndexBinarySearch(seq);
-    if (node == -1) { return -1; }
+
+    if (node == -1) {
+        return -1;
+    }
+
     do {
         uint8_t edge_label = GetW(node);
+
         if (edge_label == seq[kmer_k] || edge_label - 4 == seq[kmer_k]) {
             return node;
         }
@@ -539,6 +544,7 @@ int64_t SuccinctDBG::IndexBinarySearchEdge(uint8_t *seq) {
         --node;
     }
     while (node >= 0 && !IsLastOrTip(node));
+
     return -1;
 }
 
@@ -611,12 +617,14 @@ void SuccinctDBG::LoadFromMultiFile(const char *dbg_name, bool need_multiplicity
 
     if (need_multiplicity) {
         if (sdbg_reader.num_large_mul() > (1 << 30) ||
-            sdbg_reader.num_large_mul() > size * 0.08) {
+                sdbg_reader.num_large_mul() > size * 0.08) {
             edge_large_multi_ = (multi_t *) MallocAndCheck(sizeof(multi_t) * size, __FILE__, __LINE__);
-        } else {
+        }
+        else {
             edge_multi_ = (multi2_t *) MallocAndCheck(sizeof(multi2_t) * size, __FILE__, __LINE__);
             large_multi_h_ = kh_init(k64v16);
         }
+
         need_to_free_mul_ = true;
     }
     else {
@@ -667,19 +675,22 @@ void SuccinctDBG::LoadFromMultiFile(const char *dbg_name, bool need_multiplicity
                 edge_multi_[i] = item >> 8;
             else
                 edge_large_multi_[i] = item >> 8;
-        } else {
-            is_multi_1_[i / 64] |= (unsigned long long)((item >> 8) <= 1) << (i % 64); 
+        }
+        else {
+            is_multi_1_[i / 64] |= (unsigned long long)((item >> 8) <= 1) << (i % 64);
         }
 
         if (UNLIKELY((item >> 8) == kMulti2Sp)) {
             multi_t mul = sdbg_reader.NextLargeMul();
             assert(mul >= kMulti2Sp);
+
             if (need_multiplicity) {
                 if (edge_multi_) {
                     int ret;
                     khint_t k = kh_put(k64v16, large_multi_h_, i, &ret);
                     kh_value(large_multi_h_, k) = mul;
-                } else {
+                }
+                else {
                     edge_large_multi_[i] = mul;
                 }
             }

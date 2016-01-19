@@ -52,8 +52,8 @@ class PoolST {
     typedef BufferST<T> buffer_type;
     typedef PoolST<T> pool_type;
 
-//    static const uint32_t kMaxChunkSTSize = (1 << 12);
-//    static const uint32_t kMinChunkSTSize = (1 << 12);
+    //    static const uint32_t kMaxChunkSTSize = (1 << 12);
+    //    static const uint32_t kMinChunkSTSize = (1 << 12);
     static const uint32_t kMaxChunkSTSize = (1 << 20);
     static const uint32_t kMinChunkSTSize = (1 << 8);
 
@@ -69,14 +69,18 @@ class PoolST {
 
     pointer allocate() {
         int thread_id = 0;
+
         if (heads_[thread_id] != NULL) {
             pointer p = heads_[thread_id];
             heads_[thread_id] = *(pointer *)heads_[thread_id];
             return p;
-        } else {
+        }
+        else {
             buffer_type &buffer = buffers_[thread_id];
+
             if (buffer.index == buffer.size) {
                 uint32_t size = chunk_size_;
+
                 if (chunk_size_ < kMaxChunkSTSize)
                     chunk_size_ <<= 1;
 
@@ -112,7 +116,7 @@ class PoolST {
     }
 
     void destroy(pointer p) {
-        ((value_type*)p)->~value_type();
+        ((value_type *)p)->~value_type();
     }
 
     void swap(PoolST<value_type> &pool) {
@@ -128,6 +132,7 @@ class PoolST {
     void clear() {
         for (unsigned i = 0; i < chunks_.size(); ++i)
             alloc_.deallocate(chunks_[i].address, chunks_[i].size);
+
         chunks_.resize(0);
         fill(heads_.begin(), heads_.end(), (pointer)0);
         fill(buffers_.begin(), buffers_.end(), buffer_type());

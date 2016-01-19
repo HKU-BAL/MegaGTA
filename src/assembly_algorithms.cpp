@@ -47,6 +47,7 @@ double SetMinDepth(SuccinctDBG &dbg) {
     Histgram<multi_t> hist;
 
     #pragma omp parallel for
+
     for (int64_t i = 0; i < dbg.size; ++i) {
         if (dbg.IsValidEdge(i)) {
             hist.insert(dbg.EdgeMultiplicity(i));
@@ -54,13 +55,16 @@ double SetMinDepth(SuccinctDBG &dbg) {
     }
 
     double cov = hist.FirstLocalMinimum();
+
     for (int repeat = 1; repeat <= 100; ++repeat) {
         hist.TrimLow((multi_t)roundf(cov));
         unsigned median = hist.median();
         double cov1 = sqrt(median);
+
         if (abs(cov - cov1) < 1e-2) {
             return cov;
         }
+
         cov = cov1;
     }
 
@@ -182,7 +186,7 @@ int64_t RemoveTips(SuccinctDBG &dbg, int max_tip_len, int min_final_standalone) 
     return number_tips;
 }
 
-void MarkSubGraph(SuccinctDBG &dbg, const char* seq, int seq_len) {
+void MarkSubGraph(SuccinctDBG &dbg, const char *seq, int seq_len) {
     AtomicBitVector marked(dbg.size);
     vector<uint8_t> seq_uint8(seq_len);
     vector<uint8_t> dna_map(256, 3);
@@ -192,11 +196,12 @@ void MarkSubGraph(SuccinctDBG &dbg, const char* seq, int seq_len) {
     }
 
     for (int i = 0; i < seq_len; ++i) {
-        seq_uint8[i] = dna_map[seq[i]]; 
+        seq_uint8[i] = dna_map[seq[i]];
     }
 
     for (int i = 0; i + dbg.kmer_k + 1 < seq_len; ++i) {
         int64_t id = dbg.IndexBinarySearchEdge(&seq_uint8[i]);
+
         if (id != -1 && !marked.get(id)) {
             int64_t rev_id = dbg.EdgeReverseComplement(id);
             marked.set(id);
@@ -207,7 +212,8 @@ void MarkSubGraph(SuccinctDBG &dbg, const char* seq, int seq_len) {
             q.push(rev_id);
 
             while (!q.empty()) {
-                id = q.front(); q.pop();
+                id = q.front();
+                q.pop();
                 int64_t next_edges[4], prev_edges[4];
                 int ind = dbg.IncomingEdges(id, prev_edges);
                 int outd = dbg.OutgoingEdges(id, next_edges);
@@ -230,6 +236,7 @@ void MarkSubGraph(SuccinctDBG &dbg, const char* seq, int seq_len) {
     }
 
     int64_t num_marked = 0;
+
     for (int64_t i = 0; i < dbg.size; ++i) {
         if (!marked.get(i)) dbg.SetInvalidEdge(i);
         else num_marked++;

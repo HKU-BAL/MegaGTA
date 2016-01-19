@@ -270,9 +270,11 @@ class SdbgReader {
         if (fscanf(sdbg_info, "%d", &pre_lkt_len_) == EOF) {
             pre_lkt_len_ = 0;
             pre_lkt_size_ = num_buckets_;
+
             while ((1 << (pre_lkt_len_ * 2)) < num_buckets_) {
                 ++pre_lkt_len_;
             }
+
             pre_lkt_.resize(pre_lkt_size_ * 2);
 
             for (long long acc = 0, i = 0; i < pre_lkt_size_; ++i) {
@@ -280,11 +282,13 @@ class SdbgReader {
                 acc += p_rec_[i].num_items;
                 pre_lkt_[i * 2 + 1] = acc - 1;
             }
-        } else {
+        }
+        else {
             pre_lkt_size_ = 1 << (pre_lkt_len_ * 2);
             pre_lkt_.resize(pre_lkt_size_ * 2);
+
             for (int i = 0; i < pre_lkt_size_; ++i) {
-                assert(fscanf(sdbg_info, "%lld%lld", &pre_lkt_[i*2], &pre_lkt_[i*2+1]) == 2);
+                assert(fscanf(sdbg_info, "%lld%lld", &pre_lkt_[i * 2], &pre_lkt_[i * 2 + 1]) == 2);
             }
         }
 
@@ -372,7 +376,7 @@ class SdbgReader {
             assert(mmap_ != NULL);
             madvise(mmap_, mmap_size_, MADV_SEQUENTIAL);
 
-            cur_bucket_ptr_ = (char*)mmap_ + p_rec_[cur_bucket_].starting_offset - offset;
+            cur_bucket_ptr_ = (char *)mmap_ + p_rec_[cur_bucket_].starting_offset - offset;
             cur_vol_ = p_rec_[cur_bucket_].num_items;
         }
 
@@ -399,6 +403,7 @@ class SdbgReader {
                 munmap(mmap_, mmap_size_);
                 mmap_ = NULL;
             }
+
             for (int i = 0; i < num_files_; ++i) {
                 close(fds_[i]);
             }

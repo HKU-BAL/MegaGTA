@@ -17,19 +17,20 @@ namespace seq {
  * std::string, const std::string), operator>> (std::istream&,
  * NTSequence&), operator>> (std::istream&, AASequence&)
  */
-class ParseException
-{
-public:
-  ParseException(const std::string message)
-    : message_(message) { }
+class ParseException {
+  public:
+    ParseException(const std::string message)
+        : message_(message) { }
 
-  /**
-   * The message describing the error.
-   */
-  std::string message() const { return message_; }
+    /**
+     * The message describing the error.
+     */
+    std::string message() const {
+        return message_;
+    }
 
-private:
-  std::string message_;
+  private:
+    std::string message_;
 };
 
 };

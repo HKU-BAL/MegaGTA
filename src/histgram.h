@@ -174,20 +174,23 @@ class Histgram {
 
     /** Return the first local minimum or zero if a minimum is not
      * found. */
-    value_type FirstLocalMinimum() const
-    {
+    value_type FirstLocalMinimum() const {
         const size_t kSmoothing = 4;
         auto minimum = map_.begin();
         size_t count = 0;
+
         for (auto it = map_.begin(); it != map_.end(); ++it) {
             if (it->second <= minimum->second) {
                 minimum = it;
                 count = 0;
-            } else if (++count >= kSmoothing)
+            }
+            else if (++count >= kSmoothing)
                 break;
         }
+
         if (minimum->first == maximum())
             return 0;
+
         return minimum->first;
     }
 

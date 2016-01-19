@@ -462,6 +462,7 @@ uint32_t UnitigGraph::MergeBubbles(bool permanent_rm, bool careful, FILE *bubble
             }
         }
     }
+
     omp_destroy_lock(&output_lock);
 
     Refresh_(!permanent_rm);
@@ -521,6 +522,7 @@ uint32_t UnitigGraph::MergeComplexBubbles(double similarity, int merge_level, bo
             std::vector<vertexID_t> left_or_right;
 
             bool careful_merged = false;
+
             for (int j = 0; j < outdegree; ++j) {
                 UnitigGraphVertex &vj = vertices_[std::get<2>(branches[j])];
 
@@ -566,6 +568,7 @@ uint32_t UnitigGraph::MergeComplexBubbles(double similarity, int merge_level, bo
                                 careful_merged = true;
                                 WriteContig(vertex_labels[k], sdbg_->kmer_k, output_id, 0, -std::get<0>(branches[j]), &output_lock, bubble_file);
                                 hist.insert(vertex_labels[k].length());
+
                                 for (int ni = 0; ni < 8; ++ni) {
                                     if (std::get<3>(branches[k])[ni] != -1) {
                                         left_or_right.push_back(start_node_map_[std::get<3>(branches[k])[ni]]);
@@ -579,8 +582,9 @@ uint32_t UnitigGraph::MergeComplexBubbles(double similarity, int merge_level, bo
 
             if (careful_merged) {
                 std::sort(left_or_right.begin(), left_or_right.end());
+
                 for (int j = 0, sz = unique(left_or_right.begin(), left_or_right.end()) - left_or_right.begin();
-                     j < sz; ++j) {
+                        j < sz; ++j) {
                     UnitigGraphVertex &vertex = vertices_[left_or_right[j]];
                     string label = VertexToDNAString(sdbg_, vertex);
                     WriteContig(label, sdbg_->kmer_k, output_id, 0, vertex.depth * 1.0 / vertex.length, &output_lock, bubble_file);
@@ -589,6 +593,7 @@ uint32_t UnitigGraph::MergeComplexBubbles(double similarity, int merge_level, bo
             }
         }
     }
+
     omp_destroy_lock(&output_lock);
 
     Refresh_(!permanent_rm);

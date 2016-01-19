@@ -216,13 +216,15 @@ int main_assemble(int argc, char **argv) {
         num_removed = unitig_graph.RemoveLowDepth(opt.min_depth);
 
         unitig_graph.MergeBubbles(true, opt.careful_bubble, bubble_file, bubble_hist);
+
         if (opt.merge_len > 0) {
             unitig_graph.MergeComplexBubbles(opt.merge_similar, opt.merge_len, true, opt.careful_bubble, bubble_file, bubble_hist);
         }
 
         timer.stop();
         xlog("Unitigs removed in (more-)excessive pruning: %lld, time: %lf\n", (long long)num_removed, timer.elapsed());
-    } else if (opt.prune_level >= 2) {
+    }
+    else if (opt.prune_level >= 2) {
         timer.reset();
         timer.start();
         unitig_graph.RemoveLocalLowDepth(opt.min_depth, opt.max_tip_len, kLocalWidth, std::min(opt.low_local_ratio, 0.1), num_removed, true);
@@ -294,7 +296,7 @@ int main_assemble(int argc, char **argv) {
         fclose(out_addi_contig_file);
         fclose(out_addi_contig_info);
     }
-    
+
     fprintf(out_contig_info, "%lld %lld\n", (long long)(hist.size() + bubble_hist.size()), (long long)(hist.sum() + bubble_hist.sum()));
 
     fclose(out_contig_file);

@@ -10,31 +10,32 @@
 int main(int argc, char **argv) {
 
 
-	Kmer<4, uint64_t> kmer1;
-	int seq1[150];
-	for (int i=0; i < 150; ++i){
-		seq1[i] = rand() % 4 ;
-	}
+    Kmer<4, uint64_t> kmer1;
+    int seq1[150];
 
-	for (int i=0; i < 150; ++i){
-		std::cout << seq1[i] << " ";
-	}
+    for (int i = 0; i < 150; ++i) {
+        seq1[i] = rand() % 4 ;
+    }
 
-	std::cout << std::endl;
+    for (int i = 0; i < 150; ++i) {
+        std::cout << seq1[i] << " ";
+    }
 
-	for (int i=0; i < 45; ++i){
-		kmer1.ShiftAppend(seq1[i],45);
-	}
+    std::cout << std::endl;
 
-	for (int i=0; i < 45; ++i){
-		std::cout << "0123"[kmer1.get_base(i)] << " ";
-	}
+    for (int i = 0; i < 45; ++i) {
+        kmer1.ShiftAppend(seq1[i], 45);
+    }
 
-	std::cout << std::endl;
+    for (int i = 0; i < 45; ++i) {
+        std::cout << "0123"[kmer1.get_base(i)] << " ";
+    }
 
-	std::cout << kmer1.hash() <<std::endl;
+    std::cout << std::endl;
+
+    std::cout << kmer1.hash() << std::endl;
 
 
-	
-	return 0;
+
+    return 0;
 }

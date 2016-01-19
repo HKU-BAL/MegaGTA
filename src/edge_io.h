@@ -284,7 +284,7 @@ class EdgeReader {
 
             cur_cnt_ = 0;
             cur_vol_ = p_rec_[cur_bucket_].total_number;
-            cur_ptr_ = (uint32_t*)((char*)mmap_ + sizeof(uint32_t) * words_per_edge_ * p_rec_[cur_bucket_].starting_offset - offset);
+            cur_ptr_ = (uint32_t *)((char *)mmap_ + sizeof(uint32_t) * words_per_edge_ * p_rec_[cur_bucket_].starting_offset - offset);
         }
 
         ++cur_cnt_;
@@ -321,7 +321,7 @@ class EdgeReader {
             mmap_ = mmap(NULL, mmap_size_, PROT_READ, MAP_PRIVATE, fds_[cur_file_num_], offset);
             assert(mmap_ != NULL);
 
-            cur_ptr_ = (uint32_t*)((char*)mmap_ + (cur_file_loaded_ * sizeof(uint32_t) * words_per_edge_ - offset));
+            cur_ptr_ = (uint32_t *)((char *)mmap_ + (cur_file_loaded_ * sizeof(uint32_t) * words_per_edge_ - offset));
             madvise(cur_ptr_, sizeof(uint32_t) * words_per_edge_ * batch_size, MADV_SEQUENTIAL);
 
             cur_cnt_ = 0;

@@ -44,7 +44,7 @@ int64_t RemoveTips(SuccinctDBG &dbg, int max_tip_len, int min_final_standalone);
 int64_t PopBubbles(SuccinctDBG &dbg, int max_bubble_len, double low_depth_ratio = 1);
 
 // for experiments only
-void MarkSubGraph(SuccinctDBG &dbg, const char* seq, int seq_len);
+void MarkSubGraph(SuccinctDBG &dbg, const char *seq, int seq_len);
 
 }
 

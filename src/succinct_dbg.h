@@ -200,10 +200,12 @@ class SuccinctDBG {
                 free(edge_multi_);
                 edge_multi_ = NULL;
                 kh_destroy(k64v16, large_multi_h_);
-            } else if (edge_large_multi_ != NULL) {
+            }
+            else if (edge_large_multi_ != NULL) {
                 free(edge_large_multi_);
                 edge_large_multi_ = NULL;
             }
+
             if (is_multi_1_ != NULL) {
                 free(is_multi_1_);
             }

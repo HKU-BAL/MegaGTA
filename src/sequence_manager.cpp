@@ -347,7 +347,7 @@ int64_t SequenceManager::ReadMegahitContigs(int64_t max_num, int64_t max_num_bas
                     package_->AppendSeq(kseq_readers_[0]->seq.s, kseq_readers_[0]->seq.l);
                 }
             }
-            
+
             float mul = atof(kseq_readers_[0]->comment.s + 13);
 
             if (multi_ != NULL) {

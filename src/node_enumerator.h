@@ -16,43 +16,44 @@ using namespace std;
 
 #define MIN3(x, y, z) std::min(x, std::min(y, z))
 
-class NodeEnumerator
-{
-private:
-	static const int SCALE = 10000;
-	static constexpr double hweight = 2.0;
+class NodeEnumerator {
+  private:
+    static const int SCALE = 10000;
+    static constexpr double hweight = 2.0;
     static constexpr double kLowCovPenalty = -log(0.5); // TODO: make it an program option
-	static constexpr double kLowCovSibling = 0; // -log(0.5);
+    static constexpr double kLowCovSibling = 0; // -log(0.5);
     uint8_t next_nucl;
-	char emission;
-	double match_trans;
-	double ins_trans;
-	double del_trans;
-	// NuclKmer next_kmer;
-	int next_state;
-	ProfileHMM *hmm;
-	bool prot_search;
-	MostProbablePath *hcost;
-	AStarNode next;
+    char emission;
+    double match_trans;
+    double ins_trans;
+    double del_trans;
+    // NuclKmer next_kmer;
+    int next_state;
+    ProfileHMM *hmm;
+    bool prot_search;
+    MostProbablePath *hcost;
+    AStarNode next;
 
-public:
-	NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost) {
-		hmm = &_hmm;
-		prot_search = _hmm.getAlphabet() == ProfileHMM::protein;
-		hcost = &_hcost;
-	};
-	~NodeEnumerator() {};
-	void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg) {
-		enumerateNodes(ret, curr, forward, dbg, NULL);
-	}
+  public:
+    NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost) {
+        hmm = &_hmm;
+        prot_search = _hmm.getAlphabet() == ProfileHMM::protein;
+        hcost = &_hcost;
+    };
+    ~NodeEnumerator() {};
+    void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg) {
+        enumerateNodes(ret, curr, forward, dbg, NULL);
+    }
 
     int calLowCovSibling(SuccinctDBG &dbg, int64_t a[4], int n) {
         int isMulti1 = 0;
         int numHighCov = 0;
+
         for (int i = 0; i < n; ++i) {
             if (dbg.IsMulti1(a[i])) {
                 isMulti1 |= 1 << i;
-            } else {
+            }
+            else {
                 numHighCov++;
             }
         }
@@ -60,53 +61,62 @@ public:
         return numHighCov > 0 ? isMulti1 : 0;
     }
 
-	void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg, AStarNode *child_node) {
-		ret.clear();
-		next_state = curr.state_no + 1;
-		switch (curr.state) {
-			case 'm':
-				match_trans = hmm->tsc(curr.state_no, ProfileHMM::MM);
-				ins_trans = hmm->tsc(curr.state_no, ProfileHMM::MI);
-				del_trans = hmm->tsc(curr.state_no, ProfileHMM::MD);
-				break;
-			case 'd':
-				match_trans = hmm->tsc(curr.state_no, ProfileHMM::DM);
-				ins_trans = - numeric_limits<double>::infinity();
-				del_trans = hmm->tsc(curr.state_no, ProfileHMM::DD);
-				break;
-			case 'i':
-				match_trans = hmm->tsc(curr.state_no, ProfileHMM::IM);
-				ins_trans = hmm->tsc(curr.state_no, ProfileHMM::II);
-				del_trans = - numeric_limits<double>::infinity();
-				break;
-			default:
-				assert(false);
-		}
-		double max_match_emission = hmm->getMaxMatchEmission(next_state);
+    void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg, AStarNode *child_node) {
+        ret.clear();
+        next_state = curr.state_no + 1;
 
-		if (curr.node_id == -1) {
-	    	return;
-	    } else {
-	    	int64_t next_node[4], next_node_2[4], next_node_3[4];
-	    	vector<int64_t> packed_codon;
-	    	int outd = dbg.OutgoingEdges(curr.node_id, next_node);
+        switch (curr.state) {
+        case 'm':
+            match_trans = hmm->tsc(curr.state_no, ProfileHMM::MM);
+            ins_trans = hmm->tsc(curr.state_no, ProfileHMM::MI);
+            del_trans = hmm->tsc(curr.state_no, ProfileHMM::MD);
+            break;
+
+        case 'd':
+            match_trans = hmm->tsc(curr.state_no, ProfileHMM::DM);
+            ins_trans = - numeric_limits<double>::infinity();
+            del_trans = hmm->tsc(curr.state_no, ProfileHMM::DD);
+            break;
+
+        case 'i':
+            match_trans = hmm->tsc(curr.state_no, ProfileHMM::IM);
+            ins_trans = hmm->tsc(curr.state_no, ProfileHMM::II);
+            del_trans = - numeric_limits<double>::infinity();
+            break;
+
+        default:
+            assert(false);
+        }
+
+        double max_match_emission = hmm->getMaxMatchEmission(next_state);
+
+        if (curr.node_id == -1) {
+            return;
+        }
+        else {
+            int64_t next_node[4], next_node_2[4], next_node_3[4];
+            vector<int64_t> packed_codon;
+            int outd = dbg.OutgoingEdges(curr.node_id, next_node);
             int lowCovSibling = calLowCovSibling(dbg, next_node, outd);
 
-    		for (int i = 0; i < outd; ++i) {
-    			int outd_2 = dbg.OutgoingEdges(next_node[i], next_node_2);
+            for (int i = 0; i < outd; ++i) {
+                int outd_2 = dbg.OutgoingEdges(next_node[i], next_node_2);
                 int lowCovSibling2 = calLowCovSibling(dbg, next_node_2, outd_2);
-				for (int j = 0; j < outd_2; ++j) {
+
+                for (int j = 0; j < outd_2; ++j) {
                     int outd_3 = dbg.OutgoingEdges(next_node_2[j], next_node_3);
                     int lowCovSibling3 = calLowCovSibling(dbg, next_node_3, outd_3);
+
                     for (int k = 0; k < outd_3; ++k) {
                         int64_t packed = (next_node_3[k] << 16) |
-                            ((dbg.GetEdgeOutLabel(next_node[i])-1) << 6) |
-                            ((dbg.GetEdgeOutLabel(next_node_2[j])-1) << 3) |
-                            (dbg.GetEdgeOutLabel(next_node_3[k])-1);
+                                         ((dbg.GetEdgeOutLabel(next_node[i]) - 1) << 6) |
+                                         ((dbg.GetEdgeOutLabel(next_node_2[j]) - 1) << 3) |
+                                         (dbg.GetEdgeOutLabel(next_node_3[k]) - 1);
                         packed |= (dbg.IsMulti1(next_node[i]) &&
-                                dbg.IsMulti1(next_node_2[j]) &&
-                                dbg.IsMulti1(next_node_3[k])) << 9;
+                                   dbg.IsMulti1(next_node_2[j]) &&
+                                   dbg.IsMulti1(next_node_3[k])) << 9;
                         packed_codon.push_back(packed);
+
                         if ((lowCovSibling & (1 << i)) ||
                                 (lowCovSibling2 & (1 << j)) ||
                                 (lowCovSibling3 & (1 << k))) {
@@ -119,10 +129,12 @@ public:
             //translate to aa
             for (int i = 0; i < (int)packed_codon.size(); ++i) {
                 int64_t packed = packed_codon[i];
+
                 // next_kmer = curr.kmer.shiftLeftCopy(codons[i][0], codons[i][1], codons[i][2]);
                 if (!forward) {
                     emission = Codon::rc_codonTable[packed >> 6 & 7][packed >> 3 & 7][packed & 7];
-                } else {
+                }
+                else {
                     emission = Codon::codonTable[packed >> 6 & 7][packed >> 3 & 7][packed & 7];
                 }
 
@@ -135,14 +147,18 @@ public:
                 }
 
                 double lowCovPenalty = (packed & (1 << 9)) ? kLowCovPenalty : 0;
+
                 if (packed & (1 << 10)) lowCovPenalty += kLowCovSibling;
+
                 next = AStarNode(&curr, next_state, 'm');
 
                 next.real_score = curr.real_score + (match_trans + hmm->msc(next_state, emission)) - lowCovPenalty;
+
                 if (next.real_score >= curr.max_score) {
                     next.max_score = next.real_score;
                     next.negative_count = 0;
-                } else {
+                }
+                else {
                     next.max_score = curr.max_score;
                     next.negative_count = curr.negative_count + 1;
                 }
@@ -161,7 +177,8 @@ public:
                 if (child_node != NULL && *child_node == next) {
                     ret.push_back(next);
                     return;
-                } else {
+                }
+                else {
                     ret.push_back(next);
                 }
 
@@ -189,7 +206,8 @@ public:
                     if (child_node != NULL && *child_node == next) {
                         ret.push_back(next);
                         return;
-                    } else {
+                    }
+                    else {
                         ret.push_back(next);
                     }
                 }
@@ -201,30 +219,31 @@ public:
 
                 next.real_score = curr.real_score + del_trans;
                 next.max_score = curr.max_score;
-	    		next.negative_count = curr.negative_count + 1;
+                next.negative_count = curr.negative_count + 1;
 
-	    		next.nucl_emission = (4 << 6) | (4 << 3) | 4;
-	    		next.emission = '-';
-	    		double this_node_score = del_trans - max_match_emission;
-	    		next.length = curr.length;
-	    		next.score = curr.score + this_node_score;
-	    		next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('d', next_state)));
-	    		next.indels = curr.indels + 1;
+                next.nucl_emission = (4 << 6) | (4 << 3) | 4;
+                next.emission = '-';
+                double this_node_score = del_trans - max_match_emission;
+                next.length = curr.length;
+                next.score = curr.score + this_node_score;
+                next.fval = (int) (SCALE * (next.score + hweight * hcost->computeHeuristicCost('d', next_state)));
+                next.indels = curr.indels + 1;
 
-	    		next.node_id = curr.node_id;
+                next.node_id = curr.node_id;
 
-	    		if (child_node != NULL && *child_node == next) {
-	    			ret.push_back(next);
-	    			return;
-	    		} else {
-	    			ret.push_back(next);
-	    		}
+                if (child_node != NULL && *child_node == next) {
+                    ret.push_back(next);
+                    return;
+                }
+                else {
+                    ret.push_back(next);
+                }
 
-	    		// ret.push_back(next);
-	    	}
-	    }
-	}
-	
+                // ret.push_back(next);
+            }
+        }
+    }
+
 };
 
 #endif
