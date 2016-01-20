@@ -358,7 +358,7 @@ class HashTable {
 
         for (node_type *node = buckets_[index]; node; node = node->next) {
             if (key_equal_(key, get_key_(node->value))) {
-                // unlock_bucket(hash_value);
+                unlock_bucket(hash_value);
                 return iterator(this, node);
             }
         }

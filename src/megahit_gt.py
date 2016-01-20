@@ -20,7 +20,7 @@ usage_message = '''
 Copyright (c) The University of Hong Kong
 
 Usage:
-  megahit [options] {-1 <pe1> -2 <pe2> | --12 <pe12> | -r <se>} [-o <out_dir>]
+  megahit_gt.py [options] {-1 <pe1> -2 <pe2> | --12 <pe12> | -r <se>} [-o <out_dir>]
 
   Input options that can be specified for multiple times (supporting plain text and gz/bz2 extensions)
     -1                       <pe1>          comma-separated list of fasta/q paired-end #1 files, paired with files in <pe2>
@@ -33,22 +33,23 @@ Usage:
 
 Optional Arguments:
   Basic assembly options:
-    --min-count              <int>          minimum multiplicity for filtering (k_min+1)-mers, default 2
-    --k-list                 <int,int,..>   comma-separated list of kmer size (all must be odd, in the range 15-127, increment <= 28);
+    --min-count              <int>          minimum multiplicity for filtering (k_min+1)-mers [2]
+    --k-list                 <int,int,..>   comma-separated list of kmer size (all must be odd, in the range 15-63) [29,44]
     --no-mercy                              do not add mercy kmers
+    --max-tip-len            <int>          max tip len [150]
 
   Hardware options:
-    -m/--memory              <float>        max memory in byte to be used in SdBG construction; default 0.9
+    -m/--memory              <float>        max memory in byte to be used in SdBG construction [0.9]
                                             (if set between 0-1, fraction of the machine's total memory)
-    --mem-flag               <int>          SdBG builder memory mode, default 1
+    --mem-flag               <int>          SdBG builder memory mode [1]
                                             0: minimum; 1: moderate; others: use all memory specified by '-m/--memory'.
     --use-gpu                               use GPU
-    --gpu-mem                <float>        GPU memory in byte to be used. Default: auto detect to use up all free GPU memory. 
-    -t/--num-cpu-threads     <int>          number of CPU threads, at least 2. Default: auto detect to use all CPU threads.
+    --gpu-mem                <float>        GPU memory in byte to be used. Default: auto detect to use up all free GPU memory [0]
+    -t/--num-cpu-threads     <int>          number of CPU threads, at least 2. Default: auto detect to use all CPU threads [auto]
 
   Output options:
-    -o/--out-dir             <string>       output directory, default ./megahit_out
-    --min-contig-len         <int>          minimum length of contigs to output, default 200
+    -o/--out-dir             <string>       output directory, default ./megahit_gt_out
+    --min-contig-len         <int>          minimum length of contigs to output [450]
     --keep-tmp-files                        keep all temporary files
 
 Other Arguments:
@@ -67,14 +68,12 @@ class Options():
     def __init__(self):
         self.host_mem = 0.9
         self.gpu_mem = 0
-        self.out_dir = "./megahit_out/"
+        self.out_dir = "./megahit_gt_out/"
         self.min_contig_len = 450
-        self.k_list = list()
-        self.k_current = -1
-        self.set_list_by_min_max_step = True
+        self.max_tip_len = 150
+        self.k_list = [29,44]
         self.min_count = 1
         self.bin_dir = sys.path[0] + "/"
-        self.max_tip_len = -1
         self.no_mercy = False
         self.num_cpu_threads = 0
         self.temp_dir = self.out_dir + "tmp/"
@@ -91,12 +90,6 @@ class Options():
         self.aligned_ref = []
         self.se = []
         self.input_cmd = ""
-        self.inpipe = dict()
-        self.combined_contigs_file = ""
-        self.filtered_nucl_file = "nucl_merged.fasta"
-        self.filtered_prot_file = "prot_merged.fasta"
-        self.clustering_java_heap_memory = 16
-        self.clustering = "Clustering.jar"
         self.gene_info = {}
 
 opt = Options()
@@ -139,6 +132,7 @@ def parse_opt(argv):
                     "memory=",
                     "out-dir=",
                     "min-contig-len=",
+                    "max-tip-len=",
                     "use-gpu",
                     "num-cpu-threads=",
                     "gpu-mem=",
@@ -152,9 +146,7 @@ def parse_opt(argv):
                     "continue",
                     "version",
                     "verbose",
-                    "forward_hmm=",
-                    "reverse_hmm=",
-                    "gene_list="])
+                    "gene-list="])
     except getopt.error as msg:
         raise Usage(megahit_version_str + '\n' + str(msg))
     if len(opts) == 0:
@@ -183,9 +175,10 @@ def parse_opt(argv):
         elif option == "--k-list":
             opt.k_list = list(map(int, value.split(",")))
             opt.k_list.sort()
-            opt.set_list_by_min_max_step = False
         elif option == "--min-count":
             opt.min_count = int(value)
+        elif option == "--max-tip-len":
+            opt.max_tip_len = int(value)
         elif option == "--no-mercy":
             opt.no_mercy = True
         elif option == "--keep-tmp-files":
@@ -202,17 +195,13 @@ def parse_opt(argv):
                 need_continue = True
         elif option in ("-r", "--read"):
             opt.se += value.split(",")
-        elif option == "--forward_hmm":
-            opt.for_hmm = value
-        elif option == "--reverse_hmm":
-            opt.rev_hmm = value
         elif option == "-1":
             opt.pe1 += value.split(",")
         elif option == "-2":
             opt.pe2 += value.split(",")
         elif option == "--12":
             opt.pe12 += value.split(",")
-        elif option == "--gene_list":
+        elif option == "--gene-list":
             opt.gene_list = value
 
         else:
@@ -338,33 +327,20 @@ def get_version():
                                            stdout=subprocess.PIPE).communicate()[0].rstrip().decode('utf-8')
 
 def graph_prefix(kmer_k):
-    if not os.path.exists(opt.temp_dir + "k" + str(kmer_k)):
-        os.mkdir(opt.temp_dir + "k" + str(kmer_k))
-    return opt.temp_dir + "k" + str(kmer_k) + "/" + str(kmer_k)
+    if not os.path.exists(opt.out_dir + "k" + str(kmer_k)):
+        os.mkdir(opt.out_dir + "k" + str(kmer_k))
+    return opt.out_dir + "k" + str(kmer_k) + "/" + str(kmer_k)
+
+def contig_file(kmer_k):
+    return graph_prefix(kmer_k) + ".contigs.fa"
 
 def delect_file_if_exist(file_name):
     if os.path.exists(file_name):
         os.remove(file_name)
 
-def delete_tmp_after_build(kmer_k):
-    for i in range(0, opt.num_cpu_threads):
-        delect_file_if_exist(graph_prefix(kmer_k) + ".edges." + str(i))
-    for i in range(0, 64):
-        delect_file_if_exist(graph_prefix(kmer_k) + ".mercy_cand." + str(i))
-    for i in range(0, opt.num_cpu_threads - 1):
-        delect_file_if_exist(graph_prefix(kmer_k) + ".mercy." + str(i))
-    delect_file_if_exist(graph_prefix(kmer_k) + ".cand")
-
 def make_out_dir():
-    if os.path.exists(opt.out_dir):
-        pass
-    else:
-        os.mkdir(opt.out_dir)
-
-    if os.path.exists(opt.temp_dir):
-        pass
-    else:
-        os.mkdir(opt.temp_dir)
+    mkdir(opt.out_dir)
+    mkdir(opt.temp_dir)
 
 def write_cp():
     global cp
@@ -524,16 +500,16 @@ def build_lib():
 
     write_cp()
 
-def build_graph(list_of_k):
+def build_graph(k, assist_seq):
     global cp
     phase1_out_threads = max(1, int(opt.num_cpu_threads / 3))
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        count_opt = ["-k", str(opt.k_current),
+        count_opt = ["-k", str(k),
                      "-m", str(opt.min_count),
                      "--host_mem", str(opt.host_mem),
                      "--mem_flag", str(opt.mem_flag),
                      "--gpu_mem", str(opt.gpu_mem),
-                     "--output_prefix", graph_prefix(opt.k_current),
+                     "--output_prefix", graph_prefix(k),
                      "--num_cpu_threads", str(opt.num_cpu_threads),
                      "--num_output_threads", str(phase1_out_threads),
                      "--read_lib_file", opt.lib]
@@ -542,12 +518,11 @@ def build_graph(list_of_k):
         if not opt.no_mercy:
             cmd.append("--need_mercy")
 
-        if list_of_k and opt.k_current != opt.k_list[0]:
-            previous_k = opt.k_list[opt.k_list.index(opt.k_current) - 1]
-            cmd += ["--assist_seq", opt.combined_contigs_file]
+        if assist_seq != "":
+            cmd += ["--assist_seq", assist_seq]
 
         try:
-            logging.info("--- [%s] Extracting solid (k+1)-mers and building sdbg for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
+            logging.info("--- [%s] Building sdbg for k = %d ---" % (datetime.now().strftime("%c"), k))
 
             logging.debug("cmd: %s" % (" ").join(cmd))
             p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -561,13 +536,57 @@ def build_graph(list_of_k):
             ret_code = p.wait()
 
             if ret_code != 0:
-                logging.error("Error occurs when running \"sdbg_builder count/read2sdbg\", please refer to %s for detail" % log_file_name())
+                logging.error("Error occurs when running \"megahit_gt count/read2sdbg\", please refer to %s for detail" % log_file_name())
                 logging.error("[Exit code %d] " % ret_code)
                 exit(ret_code)
 
         except OSError as o:
             if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-                logging.error("Error: sub-program sdbg_builder not found, please recompile MEGAHIT-GT")
+                logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
+            exit(1)
+        except KeyboardInterrupt:
+            p.terminate()
+            exit(1)
+
+    write_cp()
+
+def assemble(k):
+    global cp
+    if (not opt.continue_mode) or (cp > opt.last_cp):
+        min_standalone = 400 # TODO HARDCODE
+
+        assembly_cmd = [opt.bin_dir + "megahit_gt", "denovo",
+                        "-s", graph_prefix(k),
+                        "-o", graph_prefix(k),
+                        "-t", str(opt.num_cpu_threads),
+                        "--min_standalone", str(min_standalone),
+                        "--max_tip_len", str(opt.max_tip_len)]
+
+        index_k = opt.k_list.index(k);
+        assembly_cmd += ["--min_contig", str(opt.k_list[index_k + 1] + 1)]
+            
+        try:
+            logging.info("--- [%s] De novo assembling contigs from SdBG for k = %d ---" % (datetime.now().strftime("%c"), k))
+            logging.debug("cmd: %s" % (" ").join(assembly_cmd))
+
+            p = subprocess.Popen(assembly_cmd, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+            
+            while True:
+                line = p.stderr.readline().rstrip()
+                if not line:
+                    break;
+                logging.debug(line)
+
+            ret_code = p.wait()
+
+            if ret_code != 0:
+                logging.error("Error occurs when assembling contigs for k = %d, please refer to %s for detail" % (k, log_file_name()))
+                logging.error("[Exit code %d]" % ret_code)
+                exit(ret_code)
+            
+        except OSError as o:
+            if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+                logging.error("Error: sub-program megahit_assemble not found, please recompile MEGAHIT")
             exit(1)
         except KeyboardInterrupt:
             p.terminate()
@@ -583,149 +602,135 @@ def parse_gene_list():
             opt.gene_info[words[0]] = [words[1], words[2], words[3]]
     f.close()
 
-def find_seed(gene):
+def find_seed(k, gene):
     global cp
-    parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(opt.k_current + 1), str(opt.num_cpu_threads)]
-    cmd = [opt.bin_dir + "megahit_gt", "findstart"] + parameter
+    if (not opt.continue_mode) or (cp > opt.last_cp):
+        parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(k + 1), str(opt.num_cpu_threads)]
+        cmd = [opt.bin_dir + "megahit_gt", "findstart"] + parameter
 
-    try:
-        logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, opt.k_current))
-        logging.debug("cmd: %s" % (" ").join(cmd))
-        seed_file = opt.out_dir + str(opt.k_current) + "_" + gene + "_starting_kmers_unsorted.txt"
-        final_seed_file = opt.out_dir + str(opt.k_current) + "_" + gene + "_starting_kmers.txt"
-        with open(seed_file, "w") as starting_kmers:
-            p = subprocess.Popen(cmd, stdout=starting_kmers, stderr=subprocess.PIPE)
-        ret_code = p.wait()
-        starting_kmers.close()
+        try:
+            logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, k))
+            logging.debug("cmd: %s" % (" ").join(cmd))
+            seed_file = graph_prefix(k) + "_" + gene + "_starting_kmers_unsorted.txt"
+            final_seed_file = graph_prefix(k) + "_" + gene + "_starting_kmers.txt"
+            with open(seed_file, "w") as starting_kmers:
+                p = subprocess.Popen(cmd, stdout = starting_kmers, stderr = subprocess.PIPE)
+            ret_code = p.wait()
+            starting_kmers.close()
 
-        if ret_code == 0:
-            with open(final_seed_file, "w") as final_starting_kmers:
-                sort_cmd = "sort -k4 " + seed_file + " | uniq | sort -nk8"
-                p = subprocess.Popen(sort_cmd, shell = True, stdout=final_starting_kmers, stderr=subprocess.PIPE)
+            if ret_code == 0:
+                with open(final_seed_file, "w") as final_starting_kmers:
+                    sort_cmd = "sort -k4 " + seed_file + " | uniq | sort -nk8"
+                    p = subprocess.Popen(sort_cmd, shell = True, stdout = final_starting_kmers, stderr = subprocess.PIPE)
+            else:
+                logging.error("Error occurs when finding seeds for k = %d, please refer to %s for detail" % (k, log_file_name()))
+                logging.error("[Exit code %d]" % ret_code)
+                exit(ret_code)
 
-    except OSError as o:
-        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
-        exit(1)
-    except KeyboardInterrupt:
-        p.terminate()
-        exit(1)
+        except OSError as o:
+            if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+                logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
+            exit(1)
+        except KeyboardInterrupt:
+            p.terminate()
+            exit(1)
     write_cp()
 
-def search_contigs():
+def search_contigs(k):
     global cp
-    parameter = [graph_prefix(opt.k_current), opt.gene_list, opt.out_dir + str(opt.k_current), opt.out_dir + str(opt.k_current), str(opt.num_cpu_threads)]
-    cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
+    if (not opt.continue_mode) or (cp > opt.last_cp):
+        parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k), str(opt.num_cpu_threads)]
+        cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
 
-    try:
-        logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), opt.k_current))
-        logging.debug("cmd: %s" % (" ").join(cmd))
-        p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
+        try:
+            logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), k))
+            logging.debug("cmd: %s" % (" ").join(cmd))
+            p = subprocess.Popen(cmd, stderr=subprocess.PIPE)
 
-        while True:
-            line = p.stderr.readline().rstrip()
-            if not line:
-                break;
-            logging.debug(line)
-        p.wait()
+            while True:
+                line = p.stderr.readline().rstrip()
+                if not line:
+                    break;
+                logging.debug(line)
 
-        # do this before combining
-        post_proc_directory = opt.out_dir + str(opt.k_current) + "_contigs/"
-        mkdir(post_proc_directory)
-        for key in opt.gene_info:
-            mkdir(post_proc_directory + key)
-            filter_contigs(opt.out_dir + str(opt.k_current) + "_raw_contigs_" + key + ".fasta", post_proc_directory + key + "/nucl_merged.fasta")
-            translate_to_aa([post_proc_directory + key + "/nucl_merged.fasta"], post_proc_directory + key + "/prot_merged.fasta")
+            ret_code = p.wait()
 
-        cmd2 = "bash " + opt.bin_dir + "../bin/megahit_gt_post_proc.sh" +" -d "+ os.path.realpath(post_proc_directory) + " -h 16G -c 0.01"
-        logging.debug(cmd2)
-        p = subprocess.Popen(cmd2, shell = True, stderr=subprocess.PIPE)
-        p.wait()
+            if ret_code != 0:
+                logging.error("Error occurs when searching contigs for k = %d, please refer to %s for detail" % (k, log_file_name()))
+                logging.error("[Exit code %d]" % ret_code)
+                exit(ret_code)
 
-        cmd3 = "cat " + post_proc_directory + "*/cluster/" + "_final_nucl.fasta"
-        logging.debug("cmd: " + cmd3)
-        opt.combined_contigs_file = opt.out_dir + str(opt.k_current) + "_combined_contigs" + ".fasta"
-        with open(opt.combined_contigs_file, "w") as raw_contigs:
-            p = subprocess.Popen(cmd3, shell = True, stdout=raw_contigs, stderr=subprocess.PIPE)
-        ret_code = p.wait()
-        raw_contigs.close()
+            # do this before combining
+            post_proc_directory = opt.out_dir + "contigs/"
+            mkdir(post_proc_directory)
+            for gene_name in opt.gene_info:
+                mkdir(post_proc_directory + gene_name)
+                filter_contigs(graph_prefix(k) + "_raw_contigs_" + gene_name + ".fasta", post_proc_directory + gene_name + "/nucl_merged.fasta")
+                translate_to_aa([post_proc_directory + gene_name + "/nucl_merged.fasta"], post_proc_directory + gene_name + "/prot_merged.fasta")
 
-        if ret_code == 0:
-            cmd4 = "cat " + opt.combined_contigs_file + " | " +  opt.bin_dir + "megahit_gt readstat" + "| head -n 2 | cut -d ' ' -f  3 | paste -d ' ' -s"
-            logging.debug(cmd4)
-            stat_file = opt.combined_contigs_file + ".info"
-            with open(stat_file, "w") as raw_contigs_info:
-                p = subprocess.Popen(cmd4, shell = True, stdout=raw_contigs_info, stderr=subprocess.PIPE)
-            p.wait()
-    except OSError as o:
-        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
-        exit(1)
+        except OSError as o:
+            if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+                logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
+            exit(1)
 
-    except KeyboardInterrupt:
-        p.terminate()
-        exit(1)
+        except KeyboardInterrupt:
+            p.terminate()
+            exit(1)
     write_cp()
 
 def filter_contigs(input_file, output_file):
     global cp
-    parameter = [str(opt.min_contig_len)]
-    cmd = [opt.bin_dir + "megahit_gt", "filterbylen"] + parameter
+    if (not opt.continue_mode) or (cp > opt.last_cp):
+        parameter = [str(opt.min_contig_len)]
+        cmd = [opt.bin_dir + "megahit_gt", "filterbylen"] + parameter
 
-    try:
-        logging.info("--- [%s] Filtering contigs with min_len = %d ---" % (datetime.now().strftime("%c"), opt.min_contig_len))
-        logging.debug("cmd: %s" % (" ").join(cmd))
-        # nucl_file = opt.out_dir + opt.filtered_nucl_file
-        with open(output_file, "w") as filtered_nucl_contigs:
-            with open(input_file, "r") as raw_contigs:
-                p = subprocess.Popen(cmd, stdin=raw_contigs, stdout=filtered_nucl_contigs, stderr=subprocess.PIPE)
-        p.wait()
-    except OSError as o:
-        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program megahit_toolkit not found, please recompile MEGAHIT")
-        exit(1)
-    except KeyboardInterrupt:
-        p.terminate()
-        exit(1)
+        try:
+            logging.info("--- [%s] Filtering contigs with minimum length = %d %s->%s ---" % (datetime.now().strftime("%c"), opt.min_contig_len, input_file, output_file))
+            logging.debug("cmd: %s" % (" ").join(cmd))
+            with open(output_file, "w") as filtered_nucl_contigs:
+                with open(input_file, "r") as raw_contigs:
+                    p = subprocess.Popen(cmd, stdin = raw_contigs, stdout = filtered_nucl_contigs, stderr = subprocess.PIPE)
+            ret_code = p.wait()
+
+            if ret_code != 0:
+                logging.error("Error occurs when filtering contigs for k = %d, please refer to %s for detail" % (k, log_file_name()))
+                logging.error("[Exit code %d]" % ret_code)
+                exit(ret_code)
+
+        except OSError as o:
+            if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+                logging.error("Error: sub-program megahit_toolkit not found, please recompile MEGAHIT-GT")
+            exit(1)
+
+        except KeyboardInterrupt:
+            p.terminate()
+            exit(1)
     write_cp()
 
 def translate_to_aa(input_file, output_file):
     global cp
-    cmd = [opt.bin_dir + "megahit_gt", "translate"] + input_file
+    if (not opt.continue_mode) or (cp > opt.last_cp):
+        cmd = [opt.bin_dir + "megahit_gt", "translate"] + input_file
 
-    try:
-        logging.info("--- [%s] Translating nucl contigs to aa contigs ---" % (datetime.now().strftime("%c")))
-        logging.debug("cmd: %s" % (" ").join(cmd))
-        with open(output_file, "w") as filtered_prot_contigs:
-            p = subprocess.Popen(cmd, stdout=filtered_prot_contigs, stderr=subprocess.PIPE)
-        p.wait()
-    except OSError as o:
-        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: sub-program translate not found, please recompile MEGAHIT-GT")
-        exit(1)
-    except KeyboardInterrupt:
-        p.terminate()
-        exit(1)
-    write_cp()
+        try:
+            logging.info("--- [%s] Translating nucl contigs to aa contigs %s->%s ---" % (datetime.now().strftime("%c"), input_file, output_file))
+            logging.debug("cmd: %s" % (" ").join(cmd))
+            with open(output_file, "w") as filtered_prot_contigs:
+                p = subprocess.Popen(cmd, stdout = filtered_prot_contigs, stderr = subprocess.PIPE)
+            ret_code = p.wait()
 
-def post_processing():
-    global cp
-    try:
-        logging.info("--- [%s] Preparing for post-processing ---" % (datetime.now().strftime("%c")))
-        post_proc_directory = opt.out_dir + "for_post_proc/"
-        os.makedirs(post_proc_directory)
-        for key in opt.gene_info:
-            os.makedirs(post_proc_directory + key)
-            # shutil.copyfile(opt.out_dir+str(opt.k_current)+"_raw_contigs_"+key+".fasta", post_proc_directory+key+"/nucl_merged.fasta")
-            filter_contigs(opt.out_dir+str(opt.k_current)+"_raw_contigs_"+key+".fasta", post_proc_directory+key+"/nucl_merged.fasta")
-            translate_to_aa([post_proc_directory+key+"/nucl_merged.fasta"], post_proc_directory+key+"/prot_merged.fasta")
-    except OSError as o:
-        if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-            logging.error("Error: XXXX, please recompile MEGAHIT-GT")
-        exit(1)
-    except KeyboardInterrupt:
-        p.terminate()
-        exit(1)
+            if ret_code != 0:
+                logging.error("Error occurs when translating contigs for k = %d, please refer to %s for detail" % (k, log_file_name()))
+                logging.error("[Exit code %d]" % ret_code)
+                exit(ret_code)
+
+        except OSError as o:
+            if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
+                logging.error("Error: sub-program translate not found, please recompile MEGAHIT-GT")
+            exit(1)
+        except KeyboardInterrupt:
+            p.terminate()
+            exit(1)
     write_cp()
 
 def main(argv = None):
@@ -756,7 +761,7 @@ def main(argv = None):
         logging.getLogger('').addHandler(console)
 
         logging.info(megahit_version_str)
-        logging.info("--- [%s] Start assembly. Number of CPU threads %d ---" % (datetime.now().strftime("%c"), opt.num_cpu_threads))
+        logging.info("--- [%s] Start. Number of CPU threads %d ---" % (datetime.now().strftime("%c"), opt.num_cpu_threads))
         logging.info("--- [%s] k list: %s ---" % (datetime.now().strftime("%c"), ','.join(map(str, opt.k_list))))
 
         if not opt.continue_mode:
@@ -766,24 +771,19 @@ def main(argv = None):
         build_lib()
         parse_gene_list()
 
-        if len(opt.k_list) == 1:
-            opt.k_current = opt.k_list[0]
-            build_graph(False)
-            for key in opt.gene_info:
-                find_seed(key)
-            search_contigs()
-            # post_processing()
-        elif len(opt.k_list) > 1:
-            for k in opt.k_list:
-                opt.k_current = k
-                build_graph(True)
-                # for each gene
-                for key in opt.gene_info:
-                    find_seed(key)
-                search_contigs()
-            # add one more `post processing` step for the combined contigs file
-            # post_processing()
+        for i in range(len(opt.k_list)):
+            k = opt.k_list[i]
+            assist_seq = ""
+            if i > 0:
+                assist_seq = contig_file(opt.k_list[i-1])
+            build_graph(k, assist_seq)
 
+            if i != (len(opt.k_list)) - 1:
+                assemble(k)
+            else:
+                for gene_name in opt.gene_info:
+                    find_seed(k, gene_name)
+                search_contigs(k)
 
         logging.info("--- [%s] ALL DONE. Time elapsed: %f seconds ---" % (datetime.now().strftime("%c"), time.time() - start_time))
 

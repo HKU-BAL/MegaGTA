@@ -71,7 +71,7 @@ void pruneLowDepthPath(SuccinctDBG &dbg) {
 int search(int argc, char **argv) {
 
     if (argc < 5) {
-        fprintf(stderr, "Usage: %s <succinct_dbg> <gene_list> <starting_kmers> <output_info> [num_threads=0]\n", argv[0]);
+        fprintf(stderr, "Usage: %s <succinct_dbg> <gene_list> <starting_kmers_prefix> <output_prefix> [num_threads=0]\n", argv[0]);
         exit(1);
     }
 
@@ -146,6 +146,8 @@ int search(int argc, char **argv) {
             }
         }
         else {
+            // TO YK: you must print sth before you exit
+            xerr("Fail to open %s\n", sk.c_str());
             exit(1);
         }
 

@@ -150,6 +150,7 @@ int find_start(int argc, char **argv) {
     gzclose(fp);
     return 0;
 }
+
 void ProcessSequenceMulti(const string &sequence, const string &name, const string &comment, HashSetST<ProtKmer> &kmerSet, const int &kmer_size) {
     vector<ProtKmerGenerator> kmer_gens;
     seq::NTSequence nts = seq::NTSequence("", "", sequence);

@@ -39,54 +39,23 @@ struct asm_opt_t {
     string sdbg_name;
     string output_prefix;
     int num_cpu_threads;
-
     int max_tip_len;
-    int min_standalone;
-    double min_depth;
-    bool is_final_round;
     bool no_bubble;
-    int merge_len;
-    double merge_similar;
-    int prune_level;
-    double low_local_ratio;
-    bool output_standalone;
-    bool careful_bubble;
-    bool regular_asm;
-    bool auto_depth;
-
+    int min_standalone;
+    int min_contig;
+    
     asm_opt_t() {
         output_prefix = "out";
         num_cpu_threads = 0;
         max_tip_len = -1;
-        min_standalone = 200;
         no_bubble = false;
-        merge_len = 20;
-        merge_similar = 0.98;
-        prune_level = 2;
-        low_local_ratio = 0.2;
-        min_depth = -1;
-        is_final_round = false;
-        output_standalone = false;
-        careful_bubble = false;
-        auto_depth = false;
+        min_standalone = 400;
+        min_contig = 0;
     }
 
     string contig_file() {
         return output_prefix + ".contigs.fa";
     }
-
-    string final_contig_file() {
-        return output_prefix + ".final.contigs.fa";
-    }
-
-    string addi_contig_file() {
-        return output_prefix + ".addi.fa";
-    }
-
-    string bubble_file() {
-        return output_prefix + ".bubble_seq.fa";
-    }
-
 };
 
 static asm_opt_t opt;
@@ -98,16 +67,9 @@ void ParseAsmOption(int argc, char *argv[]) {
     desc.AddOption("output_prefix", "o", opt.output_prefix, "output prefix");
     desc.AddOption("num_cpu_threads", "t", opt.num_cpu_threads, "number of cpu threads");
     desc.AddOption("max_tip_len", "", opt.max_tip_len, "max length for tips to be removed. -1 for 2k");
-    desc.AddOption("min_standalone", "", opt.min_standalone, "min length of a standalone contig to output to final.contigs.fa");
     desc.AddOption("no_bubble", "", opt.no_bubble, "do not remove bubbles");
-    desc.AddOption("merge_len", "", opt.merge_len, "merge complex bubbles of length <= merge_len * k");
-    desc.AddOption("merge_similar", "", opt.merge_similar, "min similarity of complex bubble merging");
-    desc.AddOption("prune_level", "", opt.prune_level, "strength of low local depth contig pruning (0-3)");
-    desc.AddOption("low_local_ratio", "", opt.low_local_ratio, "ratio to define low depth contigs");
-    desc.AddOption("min_depth", "", opt.min_depth, "if prune_level >= 2, permanently remove low local coverage unitigs under this threshold");
-    desc.AddOption("is_final_round", "", opt.is_final_round, "this is the last iteration");
-    desc.AddOption("output_standalone", "", opt.output_standalone, "output standalone contigs to *.final.contigs.fa");
-    desc.AddOption("careful_bubble", "", opt.careful_bubble, "remove bubble carefully");
+    desc.AddOption("min_standalone", "", opt.min_standalone, "min length of a standalone contig to output to final.contigs.fa");
+    desc.AddOption("min_contig", "", opt.min_contig, "min length of contig to output");
 
     try {
         desc.Parse(argc, argv);
@@ -164,11 +126,6 @@ int main_assemble(int argc, char **argv) {
         if (opt.max_tip_len == -1) {
             opt.max_tip_len = dbg.kmer_k * 2;
         }
-
-        if (opt.min_depth <= 0) {
-            opt.min_depth = assembly_algorithms::SetMinDepth(dbg);
-            xlog("min depth set to %.3lf\n", opt.min_depth);
-        }
     }
 
     if (opt.max_tip_len > 0) { // tips removal
@@ -187,65 +144,32 @@ int main_assemble(int argc, char **argv) {
     timer.stop();
     xlog("unitig graph size: %u, time for building: %lf\n", unitig_graph.size(), timer.elapsed());
 
-    FILE *bubble_file = OpenFileAndCheck(opt.bubble_file().c_str(), "w");
     Histgram<int64_t> bubble_hist;
 
     // remove bubbles
     if (!opt.no_bubble) {
         timer.reset();
         timer.start();
-        uint32_t num_bubbles = unitig_graph.MergeBubbles(true, opt.careful_bubble, bubble_file, bubble_hist);
+        uint32_t num_bubbles = unitig_graph.MergeBubbles(true, false, NULL, bubble_hist);
         uint32_t num_complex_bubbles = 0;
-
-        if (opt.merge_len > 0) {
-            num_complex_bubbles += unitig_graph.MergeComplexBubbles(opt.merge_similar, opt.merge_len, true, opt.careful_bubble, bubble_file, bubble_hist);
-        }
 
         timer.stop();
         xlog("Number of bubbles/complex bubbles removed: %u/%u, Time elapsed(sec): %lf\n",
              num_bubbles, num_complex_bubbles, timer.elapsed());
     }
 
-    // excessive pruning
-    static const int kLocalWidth = 1000;
-    int64_t num_removed = 0;
-
-    if (opt.prune_level >= 3) {
-        timer.reset();
-        timer.start();
-        num_removed = unitig_graph.RemoveLowDepth(opt.min_depth);
-
-        unitig_graph.MergeBubbles(true, opt.careful_bubble, bubble_file, bubble_hist);
-
-        if (opt.merge_len > 0) {
-            unitig_graph.MergeComplexBubbles(opt.merge_similar, opt.merge_len, true, opt.careful_bubble, bubble_file, bubble_hist);
-        }
-
-        timer.stop();
-        xlog("Unitigs removed in (more-)excessive pruning: %lld, time: %lf\n", (long long)num_removed, timer.elapsed());
-    }
-    else if (opt.prune_level >= 2) {
-        timer.reset();
-        timer.start();
-        unitig_graph.RemoveLocalLowDepth(opt.min_depth, opt.max_tip_len, kLocalWidth, std::min(opt.low_local_ratio, 0.1), num_removed, true);
-        timer.stop();
-        xlog("Unitigs removed in excessive pruning: %lld, time: %lf\n", (long long)num_removed, timer.elapsed());
-    }
-
     // output contigs
     Histgram<int64_t> hist;
     FILE *out_contig_file = OpenFileAndCheck(opt.contig_file().c_str(), "w");
     FILE *out_contig_info = OpenFileAndCheck((opt.contig_file() + ".info").c_str(), "w");
-    FILE *out_final_contig_file = OpenFileAndCheck(opt.final_contig_file().c_str(), "w");
 
-    if (!(opt.is_final_round && opt.prune_level >= 1)) { // otherwise output after local low depth pruning
+    { // output
         timer.reset();
         timer.start();
         hist.clear();
 
-        // unitig_graph.OutputContigs(out_contig_file, out_final_contig_file, hist, false, opt.min_standalone);
-        unitig_graph.OutputContigs(out_contig_file, opt.output_standalone ? out_final_contig_file : NULL,
-                                   hist, false, opt.min_standalone);
+        unitig_graph.OutputContigs(out_contig_file, NULL,
+                                   hist, false, 400, opt.min_contig);
 
         PrintStat(hist);
 
@@ -253,56 +177,10 @@ int main_assemble(int argc, char **argv) {
         xlog("Time to output: %lf\n", timer.elapsed());
     }
 
-    // remove local low depth & output additional contigs
-    if (opt.prune_level >= 1) {
-        FILE *out_addi_contig_file = OpenFileAndCheck(opt.addi_contig_file().c_str(), "w");
-        FILE *out_addi_contig_info = OpenFileAndCheck((opt.addi_contig_file() + ".info").c_str(), "w");
-
-        timer.reset();
-        timer.start();
-        num_removed = 0;
-        double min_depth = opt.min_depth;
-
-        while (min_depth < kMaxMulti_t) {
-            if (!unitig_graph.RemoveLocalLowDepth(min_depth, opt.max_tip_len, kLocalWidth, opt.low_local_ratio, num_removed, opt.is_final_round)) {
-                break;
-            }
-
-            min_depth *= 1.1;
-        }
-
-        uint32_t num_complex_bubbles = 0;
-
-        if (opt.merge_len > 0)
-            num_complex_bubbles = unitig_graph.MergeComplexBubbles(opt.merge_similar, opt.merge_len, opt.is_final_round, false, bubble_file, bubble_hist);
-
-        timer.stop();
-        xlog("Number of local low depth unitigs removed: %lld, complex bubbles removed: %u, time: %lf\n",
-             (long long)num_removed, num_complex_bubbles, timer.elapsed());
-
-        hist.clear();
-
-        if (!opt.is_final_round) {
-            unitig_graph.OutputContigs(out_addi_contig_file, NULL, hist, true, 0);
-        }
-        else {
-            // unitig_graph.OutputContigs(out_contig_file, out_final_contig_file, hist, false, opt.min_standalone);
-            unitig_graph.OutputContigs(out_contig_file, opt.output_standalone ? out_final_contig_file : NULL, hist, false, opt.min_standalone);
-        }
-
-        PrintStat(hist);
-        fprintf(out_addi_contig_info, "%lld %lld\n", (long long)hist.size(), (long long)hist.sum());
-
-        fclose(out_addi_contig_file);
-        fclose(out_addi_contig_info);
-    }
-
-    fprintf(out_contig_info, "%lld %lld\n", (long long)(hist.size() + bubble_hist.size()), (long long)(hist.sum() + bubble_hist.sum()));
+    fprintf(out_contig_info, "%lld %lld\n", (long long)(hist.size()), (long long)(hist.sum()));
 
     fclose(out_contig_file);
     fclose(out_contig_info);
-    fclose(out_final_contig_file);
-    fclose(bubble_file);
 
     return 0;
 }

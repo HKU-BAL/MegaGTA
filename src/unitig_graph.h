@@ -90,7 +90,7 @@ class UnitigGraph {
     uint32_t MergeComplexBubbles(double similarity, int merge_level, bool permanent_rm, bool careful, FILE *bubble_file, Histgram<int64_t> &hist);
 
     // output
-    void OutputContigs(FILE *contig_file, FILE *final_file, Histgram<int64_t> &hist, bool change_only, int min_final_standalone);
+    void OutputContigs(FILE *contig_file, FILE *final_file, Histgram<int64_t> &hist, bool change_only, int min_final_standalone, int min_contig = 0);
 
   private:
     // functions
