@@ -263,22 +263,22 @@ int64_t PopBubbles(SuccinctDBG &dbg) {
         }
     }
 
-    sort(bubble_candidates.begin(), bubble_candidates.end());
-
-#pragma omp parallel for
+#pragma omp parallel for reduction(+: num_bubbles)
     for (unsigned i = 0; i < bubble_candidates.size(); ++i) {
         BranchGroup bubble(&dbg, bubble_candidates[i].second, kMaxBranchesPerGroup, max_bubble_len);
         if (bubble.Search()) {
             if (bubble.Pop(removed_nodes)) {
                 ++num_bubbles;
             } else {
+                omp_set_lock(&bubble_lock);
                 bubble_candidates2.push_back(std::make_pair(bubble.length(), bubble_candidates[i].second));
+                omp_unset_lock(&bubble_lock);
             }
         }
     }
 
     for (unsigned i = 0; i < bubble_candidates2.size(); ++i) {
-        BranchGroup bubble(&dbg, bubble_candidates[i].second, kMaxBranchesPerGroup, max_bubble_len);
+        BranchGroup bubble(&dbg, bubble_candidates2[i].second, kMaxBranchesPerGroup, max_bubble_len);
         if (bubble.Search()) {
             if (bubble.Pop(removed_nodes)) {
                 ++num_bubbles;

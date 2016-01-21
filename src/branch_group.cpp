@@ -120,6 +120,7 @@ bool BranchGroup::Pop(AtomicBitVector &marked) {
             if (!marked.try_lock(branches_[i][j])) {
                 for (auto it = locked_nodes.begin(); it != locked_nodes.end(); ++it) {
                     marked.unset(*it);
+                    sdbg_->SetValidEdge(*it);
                 }
                 return false;
             }
