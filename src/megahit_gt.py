@@ -49,7 +49,7 @@ Usage:
 Optional Arguments:
   Basic assembly options:
     --min-count              <int>          minimum multiplicity for filtering k-mers [1]
-    --k-list                 <int,int,..>   comma-separated list of kmer size (all must be odd, in the range 15-63) [29,44]
+    --k-list                 <int,int,..>   comma-separated list of kmer size (in range 15-63) [29,35,44]
     --no-mercy                              do not add mercy kmers
     --max-tip-len            <int>          max tip len [150]
 
@@ -86,7 +86,7 @@ class Options():
         self.out_dir = "./megahit_gt_out/"
         self.min_contig_len = 450
         self.max_tip_len = 150
-        self.k_list = [29,44]
+        self.k_list = [29,35,44]
         self.min_count = 1
         self.bin_dir = sys.path[0] + "/"
         self.no_mercy = False
@@ -106,6 +106,7 @@ class Options():
         self.se = []
         self.input_cmd = ""
         self.gene_info = {}
+        self.gene_list = ""
 
 opt = Options()
 cp = 0
@@ -264,8 +265,8 @@ def check_opt():
         opt.num_cpu_threads = multiprocessing.cpu_count()
     if opt.num_cpu_threads == 0:
         opt.num_cpu_threads = multiprocessing.cpu_count()
-    if opt.num_cpu_threads <= 1:
-        raise Usage("num_cpu_threads should be at least 2.")
+    if opt.gene_list == "":
+        raise Usage("--gene-list could not be empty")
 
     # reads
     if len(opt.pe1) != len(opt.pe2):

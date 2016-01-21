@@ -1,6 +1,6 @@
 /**
  * @file kmer.h
- * @brief Kmer Class.
+ * @brief MegahitKmer Class.
  * @author Yu Peng (ypeng@cs.hku.hk)
  * @version 1.0.0
  * @date 2011-08-02
@@ -24,18 +24,18 @@
  * The value of k is not stored, many functions require a explict parameter k to work
  */
 template <unsigned kNumWords = 4, typename T = uint64_t>
-struct Kmer {
+struct MegahitKmer {
     typedef T word_t;
 
-    Kmer() {
+    MegahitKmer() {
         std::memset(data_, 0, sizeof(word_t) * kNumWords);
     }
 
-    Kmer(const Kmer &kmer) {
+    MegahitKmer(const MegahitKmer &kmer) {
         std::memcpy(data_, kmer.data_, sizeof(word_t) * kNumWords);
     }
 
-    Kmer(word_t *seq, int offset, int k) {
+    MegahitKmer(word_t *seq, int offset, int k) {
         init(seq, offset, k);
     }
 
@@ -69,14 +69,14 @@ struct Kmer {
         memset(data_ + used_words, 0, sizeof(word_t) * (kNumWords - used_words));
     }
 
-    ~Kmer() {}
+    ~MegahitKmer() {}
 
-    const Kmer &operator = (const Kmer &kmer) {
+    const MegahitKmer &operator = (const MegahitKmer &kmer) {
         std::memcpy(data_, kmer.data_, sizeof(word_t) * kNumWords);
         return *this;
     }
 
-    bool operator <(const Kmer &kmer) const {
+    bool operator <(const MegahitKmer &kmer) const {
         for (unsigned i = 0; i < kNumWords; --i) {
             if (data_[i] != kmer.data_[i])
                 return data_[i] < kmer.data_[i];
@@ -85,7 +85,7 @@ struct Kmer {
         return false;
     }
 
-    bool operator >(const Kmer &kmer) const {
+    bool operator >(const MegahitKmer &kmer) const {
         for (unsigned i = 0; i < kNumWords; --i) {
             if (data_[i] != kmer.data_[i])
                 return data_[i] > kmer.data_[i];
@@ -94,7 +94,7 @@ struct Kmer {
         return false;
     }
 
-    bool operator ==(const Kmer &kmer) const {
+    bool operator ==(const MegahitKmer &kmer) const {
         for (unsigned i = 0; i < kNumWords; ++i) {
             if (data_[i] != kmer.data_[i])
                 return false;
@@ -103,7 +103,7 @@ struct Kmer {
         return true;
     }
 
-    bool operator !=(const Kmer &kmer) const {
+    bool operator !=(const MegahitKmer &kmer) const {
         for (unsigned i = 0; i < kNumWords; ++i) {
             if (data_[i] != kmer.data_[i])
                 return true;
@@ -112,7 +112,7 @@ struct Kmer {
         return false;
     }
 
-    int cmp(const Kmer &kmer, int k) const {
+    int cmp(const MegahitKmer &kmer, int k) const {
         int used_words = (k + kCharsPerWord - 1) / kCharsPerWord;
 
         for (int i = 0; i < used_words; ++i) {
@@ -127,7 +127,7 @@ struct Kmer {
         return 0;
     }
 
-    const Kmer &ReverseComplement(int k) {
+    const MegahitKmer &ReverseComplement(int k) {
         uint32_t used_words = (k + kCharsPerWord - 1) / kCharsPerWord;
 
         for (unsigned i = 0; i < used_words; ++i)
@@ -174,7 +174,7 @@ struct Kmer {
     }
 
     bool IsPalindrome(int k) const {
-        Kmer kmer(*this);
+        MegahitKmer kmer(*this);
         return kmer.ReverseComplement(k) == *this;
     }
 
@@ -182,8 +182,8 @@ struct Kmer {
         return CityHash64((const char *)data_, sizeof(data_[0]) * kNumWords);
     }
 
-    Kmer unique_format(int k) const {
-        Kmer rev_comp = *this;
+    MegahitKmer unique_format(int k) const {
+        MegahitKmer rev_comp = *this;
         rev_comp.ReverseComplement(k);
         return (this->cmp(rev_comp, k) <= 0 ? *this : rev_comp);
     }
@@ -202,7 +202,7 @@ struct Kmer {
         data_[index / kCharsPerWord] = (data_[index / kCharsPerWord] & ~(word_t(3) << offset)) | (word_t(ch) << offset);
     }
 
-    void swap(Kmer &kmer) {
+    void swap(MegahitKmer &kmer) {
         if (this != &kmer) {
             for (unsigned i = 0; i < kNumWords; ++i)
                 std::swap(data_[i], kmer.data_[i]);
@@ -219,15 +219,15 @@ struct Kmer {
 
     static const uint32_t kBitsPerWord = sizeof(word_t) * 8;
     static const uint32_t kCharsPerWord = kBitsPerWord / 2;
-    static const uint32_t kBitsForKmer = kNumWords * kBitsPerWord;
-    static const uint32_t kMaxSize = kBitsForKmer / 2;
+    static const uint32_t kBitsForMegahitKmer = kNumWords * kBitsPerWord;
+    static const uint32_t kMaxSize = kBitsForMegahitKmer / 2;
 
     word_t data_[kNumWords];
 } __attribute__((packed));
 
 
 namespace std {
-template <const unsigned kNumWords, typename T> inline void swap(Kmer<kNumWords, T> &kmer1, Kmer<kNumWords, T> &kmer2) {
+template <const unsigned kNumWords, typename T> inline void swap(MegahitKmer<kNumWords, T> &kmer1, MegahitKmer<kNumWords, T> &kmer2) {
     kmer1.swap(kmer2);
 }
 }

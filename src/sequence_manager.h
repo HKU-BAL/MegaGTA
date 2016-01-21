@@ -26,7 +26,6 @@
 
 #include <zlib.h>
 
-#include "definitions.h"
 #include "kseq.h"
 #include "sequence_package.h"
 #include "edge_io.h"

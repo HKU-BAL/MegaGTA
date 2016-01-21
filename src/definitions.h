@@ -57,7 +57,7 @@ static const int kMaxK = 255;
 static const int kUint32PerKmerMaxK = (kMaxK + 1 + 15) / 16;
 static const int kUint64PerIdbaKmerMaxK = (kMaxK * 2 + 16 + 63) / 64;
 
-typedef Kmer<kUint32PerKmerMaxK, uint32_t> GenericKmer;
+typedef MegahitKmer<kUint32PerKmerMaxK, uint32_t> GenericKmer;
 
 #define LONG_READS
 
