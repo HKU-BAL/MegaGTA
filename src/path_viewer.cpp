@@ -3,6 +3,7 @@
 #include <fstream>
 #include <zlib.h>
 #include "kseq.h"
+#include "assembly_algorithms.h"
 
 #ifndef KSEQ_INITED
     #define KSEQ_INITED
@@ -13,7 +14,7 @@ using namespace std;
 
 int main(int argc, char **argv) {
     if (argc < 3) {
-        fprintf(stderr, "Usage %s <graph-prefix> <sequences-to-check>\n", argv[0]);
+        fprintf(stderr, "Usage %s <graph-prefix> <sequences-to-check> <remove_tips_len = 0>\n", argv[0]);
         exit(2);
     }
 
@@ -25,6 +26,10 @@ int main(int argc, char **argv) {
     gzFile fp = gzopen(argv[2], "r");
     kseq_t *seq = kseq_init(fp); // kseq to read files
     int kmer_size = dbg.kmer_k + 1;
+
+    int tip_len = 0;
+    if (argc > 3) tip_len = atoi(argv[3]);
+    assembly_algorithms::RemoveTips(dbg, tip_len, 0);
 
     // ofstream myfile;
     // myfile.open (argv[3]);

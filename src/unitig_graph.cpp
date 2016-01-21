@@ -126,8 +126,8 @@ void FoldPalindrome(std::string &s, int kmer_k, bool is_loop) {
     }
     else {
         int num_edges = s.length() - kmer_k;
-        assert(num_edges % 2 == 1);
-        s.resize((num_edges - 1) / 2 + kmer_k + 1);
+        // assert(num_edges % 2 == 1);
+        s.resize(num_edges / 2 + kmer_k + 1);
     }
 }
 
@@ -312,7 +312,7 @@ void UnitigGraph::InitFromSdBG() {
 }
 
 uint32_t UnitigGraph::MergeBubbles(bool permanent_rm, bool careful, FILE *bubble_file, Histgram<int64_t> &hist) {
-    int max_bubble_len = sdbg_->kmer_k + 2; // allow 1 indel
+    int max_bubble_len = sdbg_->kmer_k * 2 + 2; // allow 1 indel
     uint32_t num_removed = 0;
 
 

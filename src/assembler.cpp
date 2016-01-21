@@ -151,7 +151,7 @@ int main_assemble(int argc, char **argv) {
         timer.reset();
         timer.start();
         uint32_t num_bubbles = unitig_graph.MergeBubbles(true, false, NULL, bubble_hist);
-        uint32_t num_complex_bubbles = 0;
+        uint32_t num_complex_bubbles = 0; // unitig_graph.MergeComplexBubbles(0.98, 20, true, false, NULL, bubble_hist);
 
         timer.stop();
         xlog("Number of bubbles/complex bubbles removed: %u/%u, Time elapsed(sec): %lf\n",
