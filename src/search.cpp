@@ -130,6 +130,10 @@ int search(int argc, char **argv) {
         string sk = string(argv[3]) + "_" + gene[0] + "_starting_kmers.txt";
         ifstream starting_kmer_file (sk);
 
+        FILE *out_file;
+        string out_file_name = string(argv[4]) + "_raw_contigs_" + gene[0] + ".fasta";
+        out_file = fopen(out_file_name.c_str(), "w");
+
         if (starting_kmer_file.is_open()) {
             string line, line_array[8];
 
@@ -151,9 +155,6 @@ int search(int argc, char **argv) {
             continue;
         }
 
-        FILE *out_file;
-        string out_file_name = string(argv[4]) + "_raw_contigs_" + gene[0] + ".fasta";
-        out_file = fopen(out_file_name.c_str(), "w");
         vector<HMMGraphSearch> search;
         vector<NodeEnumerator> for_node_enumerator, rev_node_enumerator;
 
@@ -168,8 +169,9 @@ int search(int argc, char **argv) {
         }
 
         HashMapST<AStarNode, AStarNode> term_nodes, term_nodes_rev;
+        random_shuffle(starting_kmer_storage.begin(), starting_kmer_storage.end());
 
-        #pragma omp parallel for
+        #pragma omp parallel for schedule(dynamic, 1)
 
         for (unsigned i = 0; i < starting_kmer_storage.size(); ++i) {
             search[omp_get_thread_num()].search(gene[0], starting_kmer_storage[i].first, forward_hmm, reverse_hmm, starting_kmer_storage[i].second,

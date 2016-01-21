@@ -87,7 +87,6 @@ int find_start(int argc, char **argv) {
     kseq_t *seq = kseq_init(fp); // kseq to read files
     kseq_t *seq2 = kseq_init(fp2);
 
-    // int kmer_size = 45;
     int kmer_size = stoi(argv[3]);
     int batch_size = 1 * 1024 * 1024;
 
@@ -115,8 +114,8 @@ int find_start(int argc, char **argv) {
         if (++count == batch_size) {
             // timer.start();
             count = 0;
-            #pragma omp parallel for schedule(dynamic, 1)
 
+            #pragma omp parallel for schedule(dynamic, 1)
             for (int i = 0; i < batch_size; i++) {
                 // vector<ProtKmerGenerator> kmer_gens;
                 if ((int)sequence_storage[i].sequence_.size() >= kmer_size) {

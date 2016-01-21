@@ -6,8 +6,6 @@ void DisplayHelp(const char *program) {
 }
 
 int build_lib(int argc, char **argv) {
-    AutoMaxRssRecorder recorder;
-
     if (argc < 3) {
         DisplayHelp(argv[0]);
         exit(1);

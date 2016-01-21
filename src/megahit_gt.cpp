@@ -37,9 +37,11 @@ int main(int argc, char **argv) {
     }
 
     if (strcmp(argv[1], "buildlib") == 0) {
+        AutoMaxRssRecorder recorder;
         return build_lib(argc - 1, argv + 1);
     }
     else if (strcmp(argv[1], "buildgraph") == 0) {
+        AutoMaxRssRecorder recorder;
         return build_graph(argc - 1, argv + 1);
     }
     else if (strcmp(argv[1], "readstat") == 0) {
@@ -49,9 +51,11 @@ int main(int argc, char **argv) {
         return filter_by_len(argc - 1, argv + 1);
     }
     else if (strcmp(argv[1], "findstart") == 0) {
+        AutoMaxRssRecorder recorder;
         return find_start(argc - 1 , argv + 1);
     }
     else if (strcmp(argv[1], "search") == 0) {
+        AutoMaxRssRecorder recorder;
         return search(argc - 1, argv + 1);
     }
     else if (strcmp(argv[1], "translate") == 0) {
@@ -62,6 +66,7 @@ int main(int argc, char **argv) {
         return 0;
     }
     else if (strcmp(argv[1], "denovo") == 0) {
+        AutoMaxRssRecorder recorder;
         return main_assemble(argc - 1, argv + 1);
     }
     else {

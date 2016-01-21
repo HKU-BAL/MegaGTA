@@ -626,18 +626,13 @@ def find_seed(k, gene):
         try:
             logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, k))
             logging.debug("cmd: %s" % (" ").join(cmd))
-            seed_file = graph_prefix(k) + "_" + gene + "_starting_kmers_unsorted.txt"
             final_seed_file = graph_prefix(k) + "_" + gene + "_starting_kmers.txt"
-            with open(seed_file, "w") as starting_kmers:
+            with open(final_seed_file, "w") as starting_kmers:
                 p = subprocess.Popen(cmd, stdout = starting_kmers, stderr = subprocess.PIPE)
             ret_code = p.wait()
             starting_kmers.close()
 
-            if ret_code == 0:
-                with open(final_seed_file, "w") as final_starting_kmers:
-                    sort_cmd = "sort -k4 " + seed_file + " | uniq | sort -nk8"
-                    p = subprocess.Popen(sort_cmd, shell = True, stdout = final_starting_kmers, stderr = subprocess.PIPE)
-            else:
+            if ret_code != 0:
                 logging.error("Error occurs when finding seeds for k = %d, please refer to %s for detail" % (k, log_file_name()))
                 logging.error("[Exit code %d]" % ret_code)
                 exit(ret_code)
@@ -654,7 +649,7 @@ def find_seed(k, gene):
 def search_contigs(k):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k), str(opt.num_cpu_threads)]
+        parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k), str(min(6, opt.num_cpu_threads))]
         cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
 
         try:

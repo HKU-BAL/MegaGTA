@@ -31,8 +31,6 @@
 #include "definitions.h"
 
 int build_graph(int argc, char **argv) {
-    AutoMaxRssRecorder recorder;
-
     // parse option the same as kmer_count
     OptionsDescription desc;
     read2sdbg_opt_t opt;
