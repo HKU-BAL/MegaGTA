@@ -80,7 +80,7 @@ class UnitigGraph {
         }
     }
 
-    void InitFromSdBG();
+    void InitFromSdBG(Histgram<int64_t> *hist = NULL, FILE *out = NULL, int min_contig = 0);
     uint32_t size() {
         return vertices_.size();
     }

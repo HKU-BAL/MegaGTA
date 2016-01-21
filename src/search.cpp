@@ -65,7 +65,7 @@ void pruneLowDepthPath(SuccinctDBG &dbg) {
         }
     }
 
-    fprintf(stderr, "Path: %lld, Edge: %lld\n", nPath, nEdge);
+    xlog("Path: %lld, Edge: %lld\n", nPath, nEdge);
 }
 
 int search(int argc, char **argv) {
@@ -115,7 +115,7 @@ int search(int argc, char **argv) {
     }
 
     for (vector<string> &gene : gene_list) {
-        fprintf(stderr, "START %s\n", gene[0].c_str());
+        xlog("START %s\n", gene[0].c_str());
         ifstream hmm_file (gene[1]);
         ProfileHMM forward_hmm = ProfileHMM(true);
         Parser::readHMM(hmm_file, forward_hmm);
@@ -147,8 +147,8 @@ int search(int argc, char **argv) {
         }
         else {
             // TO YK: you must print sth before you exit
-            xerr("Fail to open %s\n", sk.c_str());
-            exit(1);
+            xlog("Fail to open %s\n", sk.c_str());
+            continue;
         }
 
         FILE *out_file;
@@ -178,7 +178,7 @@ int search(int argc, char **argv) {
 
         fclose(out_file);
 
-        fprintf(stderr, "Done %s\n", gene[0].c_str());
+        xlog("Done %s\n", gene[0].c_str());
     }
 
     return 0;

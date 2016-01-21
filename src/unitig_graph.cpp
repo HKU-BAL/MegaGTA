@@ -205,13 +205,14 @@ double GetSimilarity(std::string &a, std::string &b, double min_similar) {
 
 const size_t UnitigGraph::kMaxNumVertices = std::numeric_limits<UnitigGraph::vertexID_t>::max();
 
-void UnitigGraph::InitFromSdBG() {
+void UnitigGraph::InitFromSdBG(Histgram<int64_t> *hist, FILE *out, int min_contig) {
     start_node_map_.clear();
     vertices_.clear();
 
     omp_lock_t path_lock;
     omp_init_lock(&path_lock);
     AtomicBitVector marked(sdbg_->size);
+    long long output_id = 0;
 
     // assemble simple paths
     #pragma omp parallel for
@@ -274,11 +275,38 @@ void UnitigGraph::InitFromSdBG() {
                 continue;
             }
 
-            omp_set_lock(&path_lock);
-            vertices_.push_back(UnitigGraphVertex(cur_edge, edge_idx, rc_start, rc_end, depth, length));
-            omp_unset_lock(&path_lock);
+            if (out != NULL) { // then output
+                auto v = UnitigGraphVertex(cur_edge, edge_idx, rc_start, rc_end, depth, length);
+                double multi = std::min((double)kMaxMulti_t, (double)v.depth / v.length);
+                std::string label = VertexToDNAString(sdbg_,v);
+
+                if (v.is_palindrome) {
+                    FoldPalindrome(label, sdbg_->kmer_k, v.is_loop);
+                }
+
+                if ((int)label.length() < min_contig) continue;
+                hist->insert(label.length());
+
+                int flag = 0;
+
+                int indegree = sdbg_->EdgeIndegree(v.start_node);
+                int outdegree = sdbg_->EdgeOutdegree(v.end_node);
+
+                if (indegree == 0 && outdegree == 0) {
+                    flag = contig_flag::kIsolated;
+                }
+
+                WriteContig(label, sdbg_->kmer_k, output_id, flag, multi, &path_lock, out);
+
+            } else {
+                omp_set_lock(&path_lock);
+                vertices_.push_back(UnitigGraphVertex(cur_edge, edge_idx, rc_start, rc_end, depth, length));
+                omp_unset_lock(&path_lock);
+            }
         }
     }
+
+    if (out == NULL) return;
 
     if (vertices_.size() >= kMaxNumVertices) {
         xerr_and_exit("[ERROR] Too many vertices in the unitig graph (%llu >= %llu)\n",
@@ -874,7 +902,7 @@ void UnitigGraph::OutputContigs(FILE *contig_file, FILE *final_file, Histgram<in
             FoldPalindrome(label, sdbg_->kmer_k, vertices_[i].is_loop);
         }
 
-        if (label.length() < min_contig) continue;
+        if ((int)label.length() < min_contig) continue;
 
         histo.insert(label.length());
 

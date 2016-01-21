@@ -33,6 +33,7 @@
 #include "atomic_bit_vector.h"
 #include "utils.h"
 #include "histgram.h"
+#include "branch_group.h"
 
 using std::vector;
 using std::string;
@@ -178,11 +179,6 @@ int64_t RemoveTips(SuccinctDBG &dbg, int max_tip_len, int min_final_standalone) 
     timer.stop();
     xlog_ext("Accumulated tips removed: %lld; time elapsed: %.4f\n", (long long)number_tips, timer.elapsed());
 
-    {
-        AtomicBitVector empty;
-        removed_nodes.swap(empty);
-    }
-
     return number_tips;
 }
 
@@ -243,6 +239,55 @@ void MarkSubGraph(SuccinctDBG &dbg, const char *seq, int seq_len) {
     }
 
     xlog("Number edges marked: %lld", num_marked);
+}
+
+
+int64_t PopBubbles(SuccinctDBG &dbg) {
+    omp_lock_t bubble_lock;
+    omp_init_lock(&bubble_lock);
+    const int kMaxBranchesPerGroup = 16;
+    int max_bubble_len = dbg.kmer_k * 2 + 4;
+    vector<std::pair<int, int64_t> > bubble_candidates, bubble_candidates2;
+    int64_t num_bubbles = 0;
+    removed_nodes.reset(dbg.size, 0);
+
+#pragma omp parallel for
+    for (int64_t edge_idx = 0; edge_idx < dbg.size; ++edge_idx) {
+        if (dbg.IsValidEdge(edge_idx)) {
+            BranchGroup bubble(&dbg, edge_idx, kMaxBranchesPerGroup, max_bubble_len);
+            if (bubble.Search()) {
+                omp_set_lock(&bubble_lock);
+                bubble_candidates.push_back(std::make_pair(bubble.length(), edge_idx));
+                omp_unset_lock(&bubble_lock);
+            }
+        }
+    }
+
+    sort(bubble_candidates.begin(), bubble_candidates.end());
+
+#pragma omp parallel for
+    for (unsigned i = 0; i < bubble_candidates.size(); ++i) {
+        BranchGroup bubble(&dbg, bubble_candidates[i].second, kMaxBranchesPerGroup, max_bubble_len);
+        if (bubble.Search()) {
+            if (bubble.Pop(removed_nodes)) {
+                ++num_bubbles;
+            } else {
+                bubble_candidates2.push_back(std::make_pair(bubble.length(), bubble_candidates[i].second));
+            }
+        }
+    }
+
+    for (unsigned i = 0; i < bubble_candidates2.size(); ++i) {
+        BranchGroup bubble(&dbg, bubble_candidates[i].second, kMaxBranchesPerGroup, max_bubble_len);
+        if (bubble.Search()) {
+            if (bubble.Pop(removed_nodes)) {
+                ++num_bubbles;
+            }
+        }
+    }
+
+    omp_destroy_lock(&bubble_lock);
+    return num_bubbles;
 }
 
 } // namespace assembly_algorithms

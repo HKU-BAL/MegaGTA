@@ -136,46 +136,30 @@ int main_assemble(int argc, char **argv) {
         xlog("Tips removal done! Time elapsed(sec): %lf\n", timer.elapsed());
     }
 
-    // construct unitig graph
-    timer.reset();
-    timer.start();
-    UnitigGraph unitig_graph(&dbg);
-    unitig_graph.InitFromSdBG();
-    timer.stop();
-    xlog("unitig graph size: %u, time for building: %lf\n", unitig_graph.size(), timer.elapsed());
-
-    Histgram<int64_t> bubble_hist;
-
     // remove bubbles
     if (!opt.no_bubble) {
         timer.reset();
         timer.start();
-        uint32_t num_bubbles = unitig_graph.MergeBubbles(true, false, NULL, bubble_hist);
-        uint32_t num_complex_bubbles = 0; // unitig_graph.MergeComplexBubbles(0.98, 20, true, false, NULL, bubble_hist);
-
+        uint32_t num_bubbles = assembly_algorithms::PopBubbles(dbg);
         timer.stop();
-        xlog("Number of bubbles/complex bubbles removed: %u/%u, Time elapsed(sec): %lf\n",
-             num_bubbles, num_complex_bubbles, timer.elapsed());
+        xlog("Number of bubbles removed: %u/%u, Time elapsed(sec): %lf\n",
+             num_bubbles, timer.elapsed());
     }
 
     // output contigs
-    Histgram<int64_t> hist;
     FILE *out_contig_file = OpenFileAndCheck(opt.contig_file().c_str(), "w");
     FILE *out_contig_info = OpenFileAndCheck((opt.contig_file() + ".info").c_str(), "w");
+    // construct unitig graph
+    timer.reset();
+    timer.start();
+    UnitigGraph unitig_graph(&dbg);
+    Histgram<int64_t> hist;
+    unitig_graph.InitFromSdBG(&hist, out_contig_file, opt.min_contig);
+    timer.stop();
+    xlog("unitig graph size: %u, time for building: %lf\n", unitig_graph.size(), timer.elapsed());
 
-    { // output
-        timer.reset();
-        timer.start();
-        hist.clear();
 
-        unitig_graph.OutputContigs(out_contig_file, NULL,
-                                   hist, false, 400, opt.min_contig);
-
-        PrintStat(hist);
-
-        timer.stop();
-        xlog("Time to output: %lf\n", timer.elapsed());
-    }
+    PrintStat(hist);
 
     fprintf(out_contig_info, "%lld %lld\n", (long long)(hist.size()), (long long)(hist.sum()));
 

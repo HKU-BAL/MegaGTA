@@ -41,7 +41,7 @@ int64_t Trim(SuccinctDBG &dbg, int len, int min_final_standalone);
 int64_t RemoveTips(SuccinctDBG &dbg, int max_tip_len, int min_final_standalone);
 
 // bubble merging
-int64_t PopBubbles(SuccinctDBG &dbg, int max_bubble_len, double low_depth_ratio = 1);
+int64_t PopBubbles(SuccinctDBG &dbg);
 
 // for experiments only
 void MarkSubGraph(SuccinctDBG &dbg, const char *seq, int seq_len);
