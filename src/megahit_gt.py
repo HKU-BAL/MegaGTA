@@ -46,12 +46,9 @@ Usage:
     --12                     <pe12>         comma-separated list of interleaved fasta/q paired-end files
     -r/--read                <se>           comma-separated list of fasta/q single-end files
 
-  Input options that can be specified for at most ONE time (not recommended):
-    --input-cmd              <cmd>          command that outputs fasta/q reads to stdout; taken by MEGAHIT as SE reads 
-
 Optional Arguments:
   Basic assembly options:
-    --min-count              <int>          minimum multiplicity for filtering (k_min+1)-mers [2]
+    --min-count              <int>          minimum multiplicity for filtering k-mers [1]
     --k-list                 <int,int,..>   comma-separated list of kmer size (all must be odd, in the range 15-63) [29,44]
     --no-mercy                              do not add mercy kmers
     --max-tip-len            <int>          max tip len [150]
@@ -66,7 +63,7 @@ Optional Arguments:
     -t/--num-cpu-threads     <int>          number of CPU threads, at least 2. Default: auto detect to use all CPU threads [auto]
 
   Output options:
-    -o/--out-dir             <string>       output directory, default ./megahit_gt_out
+    -o/--out-dir             <string>       output directory [./megahit_gt_out]
     --min-contig-len         <int>          minimum length of contigs to output [450]
     --keep-tmp-files                        keep all temporary files
 
