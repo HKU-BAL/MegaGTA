@@ -621,7 +621,7 @@ def parse_gene_list():
 def find_seed(k, gene):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        parameter = [opt.gene_info[gene][2], str(opt.se[0]), str(k + 1), str(opt.num_cpu_threads)]
+        parameter = [opt.gene_info[gene][2], str(opt.lib + ".bin"), str(k + 1), str(opt.num_cpu_threads)]
         cmd = [opt.bin_dir + "megahit_gt", "findstart"] + parameter
 
         try:
