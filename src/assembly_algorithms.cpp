@@ -292,6 +292,12 @@ int64_t PopBubbles(SuccinctDBG &dbg) {
     }
 
     omp_destroy_lock(&bubble_lock);
+
+    {
+        AtomicBitVector empty;
+        empty.swap(removed_nodes);
+    }
+
     return num_bubbles;
 }
 
