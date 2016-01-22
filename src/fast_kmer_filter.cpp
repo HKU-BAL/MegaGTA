@@ -25,9 +25,24 @@
 
 using namespace std;
 
-void ProcessSequenceMulti(const string &sequence, HashSetST<ProtKmer> &kmerSet, const int &kmer_size);
-char Comp(char c);
-void RevComp(string &s);
+struct Seed {
+    string nucl;
+    string prot;
+    int model_pos;
+
+    Seed(const string &nucl = "", const string &prot = "", int model_pos = 0):
+        nucl(nucl), prot(prot), model_pos(model_pos) {}
+
+    bool operator == (const Seed &rhs) const {
+        return rhs.nucl == nucl;
+    }
+
+    bool operator < (const Seed &rhs) const {
+        return nucl < rhs.nucl;
+    }
+};
+
+void ProcessSequenceMulti(const string &sequence, HashSetST<ProtKmer> &kmerSet, const int &kmer_size, vector<Seed> &candidates);
 
 int find_start(int argc, char **argv) {
     ProtKmer::setUp();
@@ -85,6 +100,8 @@ int find_start(int argc, char **argv) {
     seq_manager.set_readlib_type(SequenceManager::kSingle); // PE info not used
     seq_manager.set_package(&package);
 
+    vector<vector<Seed> > seeds(num_threads);
+
     while ((count = seq_manager.ReadShortReads(kMaxNumReads, kMaxNumBases, append, reverse)) > 0) {
         xlog("Processing %d reads\n", count);
 #pragma omp parallel for schedule(dynamic, 1)
@@ -97,15 +114,34 @@ int find_start(int argc, char **argv) {
                     for (int j = 0; j < len; ++j) {
                         s[j] = "ACGT"[package.get_base(i, j)];
                     }
-                    ProcessSequenceMulti(s, kmerSet, kmer_size);
+                    ProcessSequenceMulti(s, kmerSet, kmer_size, seeds[omp_get_thread_num()]);
 
                     for (int j = 0; j < len; ++j) {
                         s[j] = "ACGT"[3 - package.get_base(i, len - 1 - j)];
                     }
 
-                    ProcessSequenceMulti(s, kmerSet, kmer_size);
+                    ProcessSequenceMulti(s, kmerSet, kmer_size, seeds[omp_get_thread_num()]);
                 }
             }
+    }
+
+    size_t total_size = 0;
+
+    for (int i = 0; i < num_threads; ++i) {
+        total_size += seeds[i].size();
+    }
+
+    seeds[0].reserve(total_size);
+
+    for (int i = 1; i < num_threads; ++i) {
+        seeds[0].insert(seeds[0].end(), seeds[i].begin(), seeds[i].end());
+    }
+
+    sort(seeds[0].begin(), seeds[0].end());
+    total_size = unique(seeds[0].begin(), seeds[0].end()) - seeds[0].begin();
+
+    for (size_t i = 0; i < seeds[0].size(); ++i) {
+        printf("dump_gene_name\tdump_seq_name\tdump\t%s\ttrue\t%d\t%s\t%d\n", seeds[0][i].nucl.c_str(), 1, seeds[0][i].prot.c_str(), seeds[0][i].model_pos);
     }
 
     kseq_destroy(seq);
@@ -113,7 +149,7 @@ int find_start(int argc, char **argv) {
     return 0;
 }
 
-void ProcessSequenceMulti(const string &sequence, HashSetST<ProtKmer> &kmerSet, const int &kmer_size) {
+void ProcessSequenceMulti(const string &sequence, HashSetST<ProtKmer> &kmerSet, const int &kmer_size, vector<Seed> &candidates) {
     vector<ProtKmerGenerator> kmer_gens;
     seq::NTSequence nts = seq::NTSequence("", "", sequence);
 
@@ -130,7 +166,8 @@ void ProcessSequenceMulti(const string &sequence, HashSetST<ProtKmer> &kmerSet, 
 
             if (iter != NULL) {
                 int nucl_pos = (kmer_gens[gen].getPosition() - 1) * 3 + gen;
-                printf("dump_gene_name\tdump_seq_name\tdump\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), 1, kmer.decodePacked().c_str(), iter->model_position);
+                candidates.push_back(Seed(sequence.substr(nucl_pos, kmer_size), kmer.decodePacked(), iter->model_position));
+                // printf("dump_gene_name\tdump_seq_name\tdump\t%s\ttrue\t%d\t%s\t%d\n", sequence.substr(nucl_pos, kmer_size).c_str(), 1, kmer.decodePacked().c_str(), iter->model_position);
             }
         }
     }

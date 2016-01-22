@@ -148,10 +148,12 @@ int search(int argc, char **argv) {
                 starting_kmer = make_pair(line_array[3], stoi(line_array[7]) - 1 );
                 starting_kmer_storage.push_back(starting_kmer);
             }
+
+            xlog("Searching from %zu starting kmers\n", starting_kmer_storage.size());
         }
         else {
             // TO YK: you must print sth before you exit
-            xlog("Fail to open %s\n", sk.c_str());
+            xerr("Fail to open %s\n", sk.c_str());
             continue;
         }
 

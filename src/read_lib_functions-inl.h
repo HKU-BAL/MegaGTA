@@ -136,7 +136,7 @@ inline void ReadAndWriteMultipleLibs(const std::string &lib_file, bool is_revers
 
     int64_t total_reads = 0;
     int64_t total_bases = 0;
-    bool trimN = true;
+    bool trimN = false;
     SequenceManager seq_manager(&package);
     package.clear();
     lib_info.clear();

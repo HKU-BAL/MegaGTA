@@ -191,7 +191,7 @@ class HMMGraphSearch {
                      AStarNode &goal_node, HashMapST<AStarNode, AStarNode> &term_nodes) {
         if (starting_node.state_no >= hmm.modelLength()) {
             goal_node = starting_node;
-            fprintf(stderr, "\t-\t-\t-\t-\t-\tfalse\n");
+            // fprintf(stderr, "\t-\t-\t-\t-\t-\tfalse\n");
             return true;
         }
 
@@ -264,7 +264,7 @@ class HMMGraphSearch {
                 }
 
                 getHighestScoreNode(*inter_goal_ptr, goal_node);
-                fprintf(stderr, "%d\t%zu\t%zu\t%d\t%d\t%d\tfalse\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
+                // fprintf(stderr, "%d\t%zu\t%zu\t%d\t%d\t%d\tfalse\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
                 return true;
             }
 
@@ -337,7 +337,7 @@ class HMMGraphSearch {
 
         inter_goal_ptr->partial = 1;
         getHighestScoreNode(*inter_goal_ptr, goal_node);
-        fprintf(stderr, "%d\t%zu\t%zu\t%d\t%d\t%d\ttrue\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
+        // fprintf(stderr, "%d\t%zu\t%zu\t%d\t%d\t%d\ttrue\n", opened_nodes, open.size(), closed.size(), repeated_nodes, replaced_nodes, pruned_nodes);
         return true;
     }
 

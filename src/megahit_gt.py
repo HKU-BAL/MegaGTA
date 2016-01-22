@@ -630,6 +630,13 @@ def find_seed(k, gene):
             final_seed_file = graph_prefix(k) + "_" + gene + "_starting_kmers.txt"
             with open(final_seed_file, "w") as starting_kmers:
                 p = subprocess.Popen(cmd, stdout = starting_kmers, stderr = subprocess.PIPE)
+
+                while True:
+                    line = p.stderr.readline().rstrip()
+                    if not line:
+                        break;
+                    logging.debug(line)
+                    
             ret_code = p.wait()
             starting_kmers.close()
 
