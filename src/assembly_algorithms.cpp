@@ -277,12 +277,17 @@ int64_t PopBubbles(SuccinctDBG &dbg) {
         }
     }
 
+    xlog("1-pass: pop %lld bubbles, %lld remained\n", num_bubbles, bubble_candidates2.size());
+
+#pragma omp parallel for reduction(+: num_bubbles)
     for (unsigned i = 0; i < bubble_candidates2.size(); ++i) {
         BranchGroup bubble(&dbg, bubble_candidates2[i].second, kMaxBranchesPerGroup, max_bubble_len);
         if (bubble.Search()) {
+            omp_set_lock(&bubble_lock);
             if (bubble.Pop(removed_nodes)) {
                 ++num_bubbles;
             }
+            omp_unset_lock(&bubble_lock);
         }
     }
 
