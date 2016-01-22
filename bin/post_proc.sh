@@ -11,13 +11,13 @@ JAR_DIR=${SCRIPTPATH}/../share/RDPTools/
 UCHIME=/nas5/ykhuang/uchime4.2.40_i86linux32
 HMMALIGN=/nas5/ykhuang/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmalign
 
-fileprefix=test_rplB_45
+fileprefix=proc
 THREADS=1
 FRAMEBOT=0
 
 while getopts "d:h:c:t:f" option; do
 	case "${option}" in
-		d) WORKDIR="readlink -f ${OPTARG}";; # get parameters from config file if specified
+		d) WORKDIR="`readlink -f ${OPTARG}`";; # get parameters from config file if specified
 		h) MAX_JVM_HEAP=${OPTARG};;
 		c) DIST_CUTOFF=${OPTARG};;
 		t) THREADS=${OPTARG};;
