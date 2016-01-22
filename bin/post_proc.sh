@@ -11,15 +11,17 @@ JAR_DIR=${SCRIPTPATH}/../share/RDPTools/
 UCHIME=/nas5/ykhuang/uchime4.2.40_i86linux32
 HMMALIGN=/nas5/ykhuang/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmalign
 
-fileprefix=post
+fileprefix=test_rplB_45
 THREADS=1
 FRAMEBOT=0
 
-while getopts "d:h:c:" option; do
+while getopts "d:h:c:t:f" option; do
 	case "${option}" in
 		d) WORKDIR="${OPTARG}";; # get parameters from config file if specified
 		h) MAX_JVM_HEAP=${OPTARG};;
 		c) DIST_CUTOFF=${OPTARG};;
+		t) THREADS=${OPTARG};;
+		f) FRAMEBOT=1
 	esac
 done
 
@@ -39,14 +41,17 @@ done
 ## search contigs
 for gene in ${genes[@]}
 do	
+	if [ ! -d ${WORKDIR}/${gene} ]; then
+		continue;
+	fi
+
 	cd ${WORKDIR}/${gene}
 	## get the unique merged contigs
-	if [ ! -s prot_merged.fasta ]; then
-           continue;
-        fi
-	java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/Clustering.jar derep -o temp_prot_derep.fa  ids samples prot_merged.fasta || { echo "get unique contigs failed for ${gene}" ; continue; }
-        java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/ReadSeq.jar rm-dupseq -d -i temp_prot_derep.fa -o ${fileprefix}_prot_merged_rmdup.fasta || { echo "get unique contigs failed for ${gene}" ; continue; }
-        rm temp_prot_derep.fa ids samples
+	if [ -s prot_merged.fasta ]; then
+		java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/Clustering.jar derep -o temp_prot_derep.fa  ids samples prot_merged.fasta || { echo "get unique contigs failed for ${gene}" ; continue; }
+	    java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/ReadSeq.jar rm-dupseq -d -i temp_prot_derep.fa -o ${fileprefix}_prot_merged_rmdup.fasta || { echo "get unique contigs failed for ${gene}" ; continue; }
+	    rm temp_prot_derep.fa ids samples
+    fi
 
 	## cluster at 99% aa identity
 	echo "### Cluster"
