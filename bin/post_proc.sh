@@ -6,10 +6,11 @@
 ## This will overwrites the previous search and post-assembly results
 SCRIPT=$(readlink -f $0)
 SCRIPTPATH=`dirname $SCRIPT`
-REF_DIR=${SCRIPTPATH}/../
 JAR_DIR=${SCRIPTPATH}/../share/RDPTools/
 UCHIME=/nas5/ykhuang/uchime4.2.40_i86linux32
 HMMALIGN=/nas5/ykhuang/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmalign
+
+set -x
 
 fileprefix=proc
 THREADS=1
@@ -17,16 +18,17 @@ FRAMEBOT=0
 
 while getopts "d:h:c:t:f" option; do
 	case "${option}" in
-		d) WORKDIR="`readlink -f ${OPTARG}`";; # get parameters from config file if specified
-		h) MAX_JVM_HEAP=${OPTARG};;
+		g) GENE_DIR="`readlink -f ${OPTARG}`";;
+		d) WORKDIR="`readlink -f ${OPTARG}`";;
+		m) MAX_JVM_HEAP=${OPTARG};;
 		c) DIST_CUTOFF=${OPTARG};;
 		t) THREADS=${OPTARG};;
-		f) FRAMEBOT=1
+		f) FRAMEBOT=1;;
 	esac
 done
 
 if [ -z "$WORKDIR" ] || [ -z "$MAX_JVM_HEAP" ] || [ -z "$DIST_CUTOFF" ] ; then
-   echo "Usage: $0 -d <workdir> -h <max_jvm_heap> -c <dist_cutoff> [-t <num_threads=1>] [-f (turn on framebot)]"
+   echo "Usage: $0 -g <gene_resources> -d <workdir> -m <max_jvm_heap> -c <dist_cutoff> [-t <num_threads=1>] [-f (turn on framebot)]"
    exit 1
 fi
 
@@ -61,7 +63,7 @@ do
 
 	## prot_merged.fasta might be empty, continue to next gene
 	## if use HMMER3.0, need --allcol option ##
-	${HMMALIGN} -o alignment/aligned.stk ${REF_DIR}/gene_resource/${gene}/originaldata/${gene}.hmm ../${fileprefix}_prot_merged_rmdup.fasta || { echo "hmmalign failed" ;  continue; }
+	${HMMALIGN} -o alignment/aligned.stk ${GENE_DIR}/${gene}/originaldata/${gene}.hmm ../${fileprefix}_prot_merged_rmdup.fasta || { echo "hmmalign failed" ;  continue; }
 
 	java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/AlignmentTools.jar alignment-merger alignment aligned.fasta || { echo "alignment merger failed" ;  exit 1; }
 
@@ -87,7 +89,7 @@ do
 
 	echo "### Chimera removal"
 	# remove chimeras and obtain the final good set of nucleotide and protein contigs
-        ${UCHIME} --input ${fileprefix}_nucl_rep_seqs.fasta --db ${REF_DIR}/gene_resource/${gene}/originaldata/nucl.fa --uchimeout results.uchime.txt -uchimealns result_uchimealn.txt || { echo "chimera check failed" ;  continue; }
+        ${UCHIME} --input ${fileprefix}_nucl_rep_seqs.fasta --db ${GENE_DIR}/${gene}/originaldata/nucl.fa --uchimeout results.uchime.txt -uchimealns result_uchimealn.txt || { echo "chimera check failed" ;  continue; }
         egrep '\?$|Y$' results.uchime.txt | cut -f2 | cut -f1 -d ' ' | cut -f1 > chimera.id || { echo " egrep failed" ;  exit 1; }
 	java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/ReadSeq.jar select-seqs chimera.id ${fileprefix}_final_nucl.fasta fasta N ${fileprefix}_nucl_rep_seqs.fasta || { echo " select-seqs ${fileprefix}_nucl_rep_seqs.fasta failed" ; exit 1; }
 
@@ -105,7 +107,7 @@ do
     ## find the closest matches of the nucleotide representatives using FrameBot
     MIN_LENGTH=0
 	echo "### FrameBot"
-        java -jar ${JAR_DIR}/FrameBot.jar framebot -N -l ${MIN_LENGTH} -o ${fileprefix} ${REF_DIR}/gene_resource/${gene}/originaldata/framebot.fa ${fileprefix}_final_nucl.fasta || { echo "FrameBot failed for ${gene}" ; continue; }
+        java -jar ${JAR_DIR}/FrameBot.jar framebot -N -l ${MIN_LENGTH} -o ${fileprefix} ${GENE_DIR}/${gene}/originaldata/framebot.fa ${fileprefix}_final_nucl.fasta || { echo "FrameBot failed for ${gene}" ; continue; }
 
 	## or find the closest matches of protein representatives final_prot.fasta using AlignmentTool pairwise-knn
 
@@ -114,7 +116,7 @@ do
  #        java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/KmerFilter.jar kmer_coverage -t ${THREADS} -m ${fileprefix}_match_reads.fa ${K_SIZE} ${fileprefix}_final_nucl.fasta ${fileprefix}_coverage.txt ${fileprefix}_abundance.txt ${SEQFILE} || { echo "kmer_coverage failed" ;  continue; }
 
 	# ## get the taxonomic abundance, use the lineage from the protein reference file
-	# java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/FrameBot.jar taxonAbund -c ${fileprefix}_coverage.txt ${fileprefix}_framebot.txt ${REF_DIR}/gene_resource/${gene}/originaldata/framebot.fa ${fileprefix}_taxonabund.txt
+	# java -Xmx${MAX_JVM_HEAP} -jar ${JAR_DIR}/FrameBot.jar taxonAbund -c ${fileprefix}_coverage.txt ${fileprefix}_framebot.txt ${GENE_DIR}/${gene}/originaldata/framebot.fa ${fileprefix}_taxonabund.txt
 
 done
 
