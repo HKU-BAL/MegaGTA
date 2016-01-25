@@ -20,7 +20,6 @@ class NodeEnumerator {
   private:
     static const int SCALE = 10000;
     static constexpr double hweight = 2.0;
-    static constexpr double kLowCovPenalty = -log(0.5); // TODO: make it an program option
     static constexpr double kLowCovSibling = 0; // -log(0.5);
     uint8_t next_nucl;
     char emission;
@@ -33,12 +32,14 @@ class NodeEnumerator {
     bool prot_search;
     MostProbablePath *hcost;
     AStarNode next;
+    double low_cov_penalty;
 
   public:
-    NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost) {
+    NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost, double low_cov_penalty) {
         hmm = &_hmm;
         prot_search = _hmm.getAlphabet() == ProfileHMM::protein;
         hcost = &_hcost;
+        low_cov_penalty = -log(low_cov_penalty);
     };
     ~NodeEnumerator() {};
     void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg) {
@@ -146,7 +147,7 @@ class NodeEnumerator {
                     continue;
                 }
 
-                double lowCovPenalty = (packed & (1 << 9)) ? kLowCovPenalty : 0;
+                double lowCovPenalty = (packed & (1 << 9)) ? low_cov_penalty : 0;
 
                 if (packed & (1 << 10)) lowCovPenalty += kLowCovSibling;
 

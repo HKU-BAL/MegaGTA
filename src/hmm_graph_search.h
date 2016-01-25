@@ -31,7 +31,8 @@ class HMMGraphSearch {
     PoolST<AStarNode> *pool_;
 
   public:
-    HMMGraphSearch(int &pruning) : heuristic_pruning(pruning), pool_(NULL) {}
+    HMMGraphSearch(const int &pruning) 
+        : heuristic_pruning(pruning), pool_(NULL) {}
     void constructPool() {
         assert(!pool_);
         pool_ = new PoolST<AStarNode>;

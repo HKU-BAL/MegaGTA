@@ -48,10 +48,12 @@ Usage:
 
 Optional Arguments:
   Basic assembly options:
-    --min-count              <int>          minimum multiplicity for filtering k-mers [1]
-    --k-list                 <int,int,..>   comma-separated list of kmer size (in range 15-63) [29,35,44]
+    -c/--min-count           <int>          minimum multiplicity for filtering k-mers [1]
+    -k/--k-list              <int,int,..>   comma-separated list of kmer size (in range 15-63) [29,35,44]
+    -p/--prune-len           <int>          prune the search if the score does not improve after <int> steps [20]
+    -l/--low-cov-penalty     <float>        penalty for coverage one edges (in [0,1]) [0.5]
+    --max-tip-len            <int>          max tip length [150]
     --no-mercy                              do not add mercy kmers
-    --max-tip-len            <int>          max tip len [150]
 
   Hardware options:
     -m/--memory              <float>        max memory in byte to be used in SdBG construction [0.9]
@@ -86,6 +88,8 @@ class Options():
         self.out_dir = "./megahit_gt_out/"
         self.min_contig_len = 450
         self.max_tip_len = 150
+        self.prune_len = 20
+        self.low_cov_penalty = 0.5
         self.k_list = [29,35,44]
         self.min_count = 1
         self.bin_dir = sys.path[0] + "/"
@@ -140,7 +144,7 @@ def make_out_dir():
 
 def parse_opt(argv):
     try:
-        opts, args = getopt.getopt(argv, "hm:o:r:t:v1:2:l:", 
+        opts, args = getopt.getopt(argv, "hm:o:r:t:v1:2:l:k:l:p:c", 
                 ["help",
                     "read=",
                     "12=",
@@ -149,6 +153,8 @@ def parse_opt(argv):
                     "out-dir=",
                     "min-contig-len=",
                     "max-tip-len=",
+                    "--low-cov-penalty=",
+                    "--prune-len=",
                     "use-gpu",
                     "num-cpu-threads=",
                     "gpu-mem=",
@@ -188,10 +194,10 @@ def parse_opt(argv):
             opt.num_cpu_threads = int(value)
         elif option == "--kmin-1pass":
             opt.kmin_1pass = True
-        elif option == "--k-list":
+        elif option in ("--k-list", "-k"):
             opt.k_list = list(map(int, value.split(",")))
             opt.k_list.sort()
-        elif option == "--min-count":
+        elif option in ("--min-count", "-c"):
             opt.min_count = int(value)
         elif option == "--max-tip-len":
             opt.max_tip_len = int(value)
@@ -219,6 +225,10 @@ def parse_opt(argv):
             opt.pe12 += value.split(",")
         elif option == "--gene-list":
             opt.gene_list = value
+        elif option in ("--prune-len", "-p"):
+            opt.prune_len = int(value)
+        elif option in ("--low-cov-penalty", "-l"):
+            opt.low_cov_penalty = float(value)
 
         else:
             raise Usage("Invalid option %s", option)
@@ -267,6 +277,10 @@ def check_opt():
         opt.num_cpu_threads = multiprocessing.cpu_count()
     if opt.gene_list == "":
         raise Usage("--gene-list could not be empty")
+    if opt.prune_len <= 0:
+        raise Usage("prune length should be >= 1")
+    if opt.low_cov_penalty < 0 or opt.low_cov_penalty > 1:
+        raise Usage("low coverage penalty should be between [0, 1]")
 
     # reads
     if len(opt.pe1) != len(opt.pe2):
@@ -636,7 +650,7 @@ def find_seed(k, gene):
                     if not line:
                         break;
                     logging.debug(line)
-                    
+
             ret_code = p.wait()
             starting_kmers.close()
 
@@ -657,7 +671,8 @@ def find_seed(k, gene):
 def search_contigs(k):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k), str(min(6, opt.num_cpu_threads))]
+        parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k), str(min(6, opt.num_cpu_threads)),
+                     opt.prune_len, opt.low_cov_penalty]
         cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
 
         try:

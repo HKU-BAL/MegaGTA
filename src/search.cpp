@@ -69,16 +69,15 @@ void pruneLowDepthPath(SuccinctDBG &dbg) {
 }
 
 int search(int argc, char **argv) {
-
-    if (argc < 5) {
-        fprintf(stderr, "Usage: %s <succinct_dbg> <gene_list> <starting_kmers_prefix> <output_prefix> [num_threads=0]\n", argv[0]);
+    if (argc < 7) {
+        fprintf(stderr, "Usage: %s <succinct_dbg> <gene_list> <starting_kmers_prefix> <output_prefix> <prune_len> <low_cov_penalty> [num_threads=0]\n", argv[0]);
         exit(1);
     }
 
     int num_threads = 0;
 
-    if (argc > 5) {
-        num_threads = atoi(argv[5]);
+    if (argc > 7) {
+        num_threads = atoi(argv[7]);
     }
 
     if (num_threads == 0) {
@@ -87,7 +86,8 @@ int search(int argc, char **argv) {
 
     omp_set_num_threads(num_threads);
 
-    int heuristic_pruning = 20; //this one should be able to adapt to user preference
+    int heuristic_pruning = atoi(argv[5]); //this one should be able to adapt to user preference
+    double low_cov_penalty = atof(argv[6]);
     HMMGraphSearch::setUp();
     SuccinctDBG dbg;
     dbg.LoadFromMultiFile(argv[1], false);
@@ -162,8 +162,8 @@ int search(int argc, char **argv) {
 
         for (int i = 0; i < num_threads; ++i) {
             search.push_back(HMMGraphSearch(heuristic_pruning));
-            for_node_enumerator.push_back(NodeEnumerator(forward_hmm, for_hcost));
-            rev_node_enumerator.push_back(NodeEnumerator(reverse_hmm, rev_hcost));
+            for_node_enumerator.push_back(NodeEnumerator(forward_hmm, for_hcost, low_cov_penalty));
+            rev_node_enumerator.push_back(NodeEnumerator(reverse_hmm, rev_hcost, low_cov_penalty));
         }
 
         for (int i = 0; i < num_threads; ++i) {
