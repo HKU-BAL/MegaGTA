@@ -35,11 +35,11 @@ class NodeEnumerator {
     double low_cov_penalty;
 
   public:
-    NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost, double low_cov_penalty) {
+    NodeEnumerator(ProfileHMM &_hmm, MostProbablePath &_hcost, double low_cov_pen) {
         hmm = &_hmm;
         prot_search = _hmm.getAlphabet() == ProfileHMM::protein;
         hcost = &_hcost;
-        low_cov_penalty = -log(low_cov_penalty);
+        this->low_cov_penalty = -log(low_cov_pen);
     };
     ~NodeEnumerator() {};
     void enumerateNodes(vector<AStarNode> &ret, AStarNode &curr, bool forward, SuccinctDBG &dbg) {

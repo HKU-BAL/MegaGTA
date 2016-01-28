@@ -10,13 +10,12 @@ JAR_DIR=${SCRIPTPATH}/../share/RDPTools/
 UCHIME=/nas5/ykhuang/uchime4.2.40_i86linux32
 HMMALIGN=/nas5/ykhuang/hmmer-3.1b2-linux-intel-x86_64/binaries/hmmalign
 
-set -x
 
 fileprefix=proc
 THREADS=1
 FRAMEBOT=0
 
-while getopts "d:h:c:t:f" option; do
+while getopts "g:d:m:c:t:f" option; do
 	case "${option}" in
 		g) GENE_DIR="`readlink -f ${OPTARG}`";;
 		d) WORKDIR="`readlink -f ${OPTARG}`";;
@@ -27,7 +26,7 @@ while getopts "d:h:c:t:f" option; do
 	esac
 done
 
-if [ -z "$WORKDIR" ] || [ -z "$MAX_JVM_HEAP" ] || [ -z "$DIST_CUTOFF" ] ; then
+if [ -z "$WORKDIR" ] || [ -z "$MAX_JVM_HEAP" ] || [ -z "$DIST_CUTOFF" ] || [ -z "$GENE_DIR" ]; then
    echo "Usage: $0 -g <gene_resources> -d <workdir> -m <max_jvm_heap> -c <dist_cutoff> [-t <num_threads=1>] [-f (turn on framebot)]"
    exit 1
 fi

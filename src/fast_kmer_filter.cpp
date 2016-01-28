@@ -125,6 +125,37 @@ int find_start(int argc, char **argv) {
             }
     }
 
+    if (argc > 5) {
+        seq_manager.clear();
+        seq_manager.set_file_type(SequenceManager::kFastxReads);
+        seq_manager.set_file(argv[5]);
+        seq_manager.set_readlib_type(SequenceManager::kSingle); // PE info not used
+        seq_manager.set_package(&package);
+
+        while ((count = seq_manager.ReadShortReads(kMaxNumReads, kMaxNumBases, append, reverse)) > 0) {
+            xlog("Processing %d contigs\n", count);
+    #pragma omp parallel for schedule(dynamic, 1)
+            for (int i = 0; i < count; i++) {
+                int len = package.length(i);
+                if (len >= kmer_size) {
+                    string s;
+                    s.resize(len);
+
+                    for (int j = 0; j < len; ++j) {
+                        s[j] = "ACGT"[package.get_base(i, j)];
+                    }
+                    ProcessSequenceMulti(s, kmerSet, kmer_size, seeds[omp_get_thread_num()]);
+
+                    for (int j = 0; j < len; ++j) {
+                        s[j] = "ACGT"[3 - package.get_base(i, len - 1 - j)];
+                    }
+
+                    ProcessSequenceMulti(s, kmerSet, kmer_size, seeds[omp_get_thread_num()]);
+                }
+            }
+        }
+    }
+
     size_t total_size = 0;
 
     for (int i = 0; i < num_threads; ++i) {

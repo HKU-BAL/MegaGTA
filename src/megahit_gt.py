@@ -38,13 +38,15 @@ usage_message = '''
 Copyright (c) The University of Hong Kong
 
 Usage:
-  megahit_gt.py [options] {-1 <pe1> -2 <pe2> | --12 <pe12> | -r <se>} [-o <out_dir>]
+  megahit_gt.py [options] {-1 <pe1> -2 <pe2> | --12 <pe12> | -r <se>} -g gene_list.txt [-o <out_dir>]
 
   Input options that can be specified for multiple times (supporting plain text and gz/bz2 extensions)
     -1                       <pe1>          comma-separated list of fasta/q paired-end #1 files, paired with files in <pe2>
     -2                       <pe2>          comma-separated list of fasta/q paired-end #2 files, paired with files in <pe1>
     --12                     <pe12>         comma-separated list of interleaved fasta/q paired-end files
     -r/--read                <se>           comma-separated list of fasta/q single-end files
+    
+    -g/--gene-list           <string>       gene list
 
 Optional Arguments:
   Basic assembly options:
@@ -144,7 +146,7 @@ def make_out_dir():
 
 def parse_opt(argv):
     try:
-        opts, args = getopt.getopt(argv, "hm:o:r:t:v1:2:l:k:l:p:c", 
+        opts, args = getopt.getopt(argv, "hm:o:r:t:v1:2:l:k:l:p:c:g:", 
                 ["help",
                     "read=",
                     "12=",
@@ -223,7 +225,7 @@ def parse_opt(argv):
             opt.pe2 += value.split(",")
         elif option == "--12":
             opt.pe12 += value.split(",")
-        elif option == "--gene-list":
+        elif option in ("--gene-list", "-g"):
             opt.gene_list = value
         elif option in ("--prune-len", "-p"):
             opt.prune_len = int(value)
@@ -636,6 +638,9 @@ def find_seed(k, gene):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
         parameter = [opt.gene_info[gene][2], str(opt.lib + ".bin"), str(k + 1), str(opt.num_cpu_threads)]
+        # index_k = opt.k_list.index(k)
+        # if index_k > 0:
+        #     parameter += [contig_file(opt.k_list[index_k - 1])]
         cmd = [opt.bin_dir + "megahit_gt", "findstart"] + parameter
 
         try:
@@ -671,8 +676,8 @@ def find_seed(k, gene):
 def search_contigs(k):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k), str(min(6, opt.num_cpu_threads)),
-                     opt.prune_len, opt.low_cov_penalty]
+        parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k),
+                     str(opt.prune_len), str(opt.low_cov_penalty), str(min(6, opt.num_cpu_threads))]
         cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
 
         try:
@@ -699,7 +704,7 @@ def search_contigs(k):
             for gene_name in opt.gene_info:
                 mkdir(post_proc_directory + gene_name)
                 filter_contigs(graph_prefix(k) + "_raw_contigs_" + gene_name + ".fasta", post_proc_directory + gene_name + "/nucl_merged.fasta")
-                translate_to_aa([post_proc_directory + gene_name + "/nucl_merged.fasta"], post_proc_directory + gene_name + "/prot_merged.fasta")
+                translate_to_aa(post_proc_directory + gene_name + "/nucl_merged.fasta", post_proc_directory + gene_name + "/prot_merged.fasta")
 
         except OSError as o:
             if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
@@ -743,7 +748,7 @@ def filter_contigs(input_file, output_file):
 def translate_to_aa(input_file, output_file):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        cmd = [opt.bin_dir + "megahit_gt", "translate"] + input_file
+        cmd = [opt.bin_dir + "megahit_gt", "translate"] + [input_file]
 
         try:
             logging.info("--- [%s] Translating nucl contigs to aa contigs %s->%s ---" % (datetime.now().strftime("%c"), input_file, output_file))
