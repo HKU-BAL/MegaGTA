@@ -40,7 +40,6 @@ LIB_CODON = $(LIB_CODON_DIR)/AASequence.o
 LIB_CODON += $(LIB_CODON_DIR)/AminoAcid.o
 LIB_CODON += $(LIB_CODON_DIR)/CodingSequence.o
 LIB_CODON += $(LIB_CODON_DIR)/Codon.o
-LIB_CODON += $(LIB_CODON_DIR)/Mutation.o
 LIB_CODON += $(LIB_CODON_DIR)/NTSequence.o
 LIB_CODON += $(LIB_CODON_DIR)/Nucleotide.o
 
@@ -69,6 +68,9 @@ megahit_gt: megahit_gt.o assembler.o unitig_graph.o assembly_algorithms.o build_
 
 path_viewer: path_viewer.o succinct_dbg.o assembly_algorithms.o
 	$(CXX) $(CXXFLAGS)  path_viewer.o succinct_dbg.o assembly_algorithms.o -o path_viewer $(LIB)
+
+false_positive_checker: false_positive_checker.o succinct_dbg.o
+	$(CXX) $(CXXFLAGS)  false_positive_checker.o succinct_dbg.o -o false_positive_checker $(LIB)
 
 PHONY:
 clean:

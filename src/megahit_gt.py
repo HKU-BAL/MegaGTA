@@ -638,9 +638,9 @@ def find_seed(k, gene):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
         parameter = [opt.gene_info[gene][2], str(opt.lib + ".bin"), str(k + 1), str(opt.num_cpu_threads)]
-        # index_k = opt.k_list.index(k)
-        # if index_k > 0:
-        #     parameter += [contig_file(opt.k_list[index_k - 1])]
+        index_k = opt.k_list.index(k)
+        if index_k > 0:
+            parameter += [contig_file(opt.k_list[index_k - 1])]
         cmd = [opt.bin_dir + "megahit_gt", "findstart"] + parameter
 
         try:
@@ -677,7 +677,7 @@ def search_contigs(k):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
         parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k),
-                     str(opt.prune_len), str(opt.low_cov_penalty), str(min(6, opt.num_cpu_threads))]
+                     str(opt.prune_len), str(opt.low_cov_penalty), str(min(12, opt.num_cpu_threads))]
         cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
 
         try:
