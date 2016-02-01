@@ -89,8 +89,15 @@ int search(int argc, char **argv) {
     int heuristic_pruning = atoi(argv[5]); //this one should be able to adapt to user preference
     double low_cov_penalty = atof(argv[6]);
     HMMGraphSearch::setUp();
+
+    xtimer_t timer;
+    timer.reset();
+    timer.start();
     SuccinctDBG dbg;
+    xlog("Loading SdBG...\n");
     dbg.LoadFromMultiFile(argv[1], false);
+    timer.stop();
+    xlog("Done! Time elapsed: %.4lf\n", timer.elapsed());
 
     // pruneLowDepthPath(dbg);
 
@@ -115,6 +122,8 @@ int search(int argc, char **argv) {
     }
 
     for (vector<string> &gene : gene_list) {
+        timer.reset();
+        timer.start();
         xlog("START %s\n", gene[0].c_str());
         ifstream hmm_file (gene[1]);
         ProfileHMM forward_hmm = ProfileHMM(true);
@@ -171,7 +180,6 @@ int search(int argc, char **argv) {
         }
 
         HashMapST<AStarNode, AStarNode> term_nodes, term_nodes_rev;
-        random_shuffle(starting_kmer_storage.begin(), starting_kmer_storage.end());
 
         #pragma omp parallel for schedule(dynamic, 1)
 
@@ -182,7 +190,8 @@ int search(int argc, char **argv) {
 
         fclose(out_file);
 
-        xlog("Done %s\n", gene[0].c_str());
+        timer.stop();
+        xlog("Done %s: time %.4lf\n", gene[0].c_str(), timer.elapsed());
     }
 
     return 0;

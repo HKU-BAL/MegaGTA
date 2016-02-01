@@ -170,6 +170,8 @@ int find_start(int argc, char **argv) {
 
     sort(seeds[0].begin(), seeds[0].end());
     total_size = unique(seeds[0].begin(), seeds[0].end()) - seeds[0].begin();
+    random_shuffle(seeds[0].begin(), seeds[0].begin() + total_size);
+
 
     for (size_t i = 0; i < total_size; ++i) {
         printf("dump_gene_name\tdump_seq_name\tdump\t%s\ttrue\t%d\t%s\t%d\n", seeds[0][i].nucl.c_str(), 1, seeds[0][i].prot.c_str(), seeds[0][i].model_pos);
