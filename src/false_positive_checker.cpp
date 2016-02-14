@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 
     SuccinctDBG dbg;
     // load graph
-    dbg.LoadFromMultiFile(argv[1], true); // false means do not load the multiplicity to save memory
+    dbg.LoadFromMultiFile(argv[1], false); // false means do not load the multiplicity to save memory
     fprintf(stderr, "kmer_size: %d, graph_size: %lld\n", dbg.kmer_k, (long long)dbg.size);
 
     gzFile fp = gzopen(argv[2], "r");
