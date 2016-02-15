@@ -813,7 +813,7 @@ def main(argv = None):
         parse_gene_list()
 
         for i in range(len(opt.k_list)):
-            opt.k_list[i]--
+            opt.k_list[i] -= 1
 
         for i in range(len(opt.k_list)):
             k = opt.k_list[i]
