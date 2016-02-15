@@ -33,7 +33,7 @@ import logging
 import time
 from datetime import datetime
 
-megahit_version_str = ""
+megagta_version_str = ""
 usage_message = '''
 Copyright (c) The University of Hong Kong
 
@@ -173,16 +173,16 @@ def parse_opt(argv):
                     "verbose",
                     "gene-list="])
     except getopt.error as msg:
-        raise Usage(megahit_version_str + '\n' + str(msg))
+        raise Usage(megagta_version_str + '\n' + str(msg))
     if len(opts) == 0:
-        raise Usage(megahit_version_str + '\n' + usage_message)
+        raise Usage(megagta_version_str + '\n' + usage_message)
 
     global opt
     need_continue = False
 
     for option, value in opts:
         if option in ("-h", "--help"):
-            print(megahit_version_str + '\n' + usage_message)
+            print(megagta_version_str + '\n' + usage_message)
             exit(0)
         elif option in ("-o", "--out-dir"):
             if opt.continue_mode == 0:
@@ -211,7 +211,7 @@ def parse_opt(argv):
         elif option == "--mem-flag":
             opt.mem_flag = int(value)
         elif option in ("-v", "--version"):
-            print(megahit_version_str)
+            print(megagta_version_str)
             exit(0)
         elif option == "--verbose":
             opt.verbose = True
@@ -356,8 +356,8 @@ def check_bin():
             raise Usage("Cannot find sub-program \"" + subprogram + "\", please recompile.")
 
 def get_version():
-    global megahit_version_str
-    megahit_version_str = "MEGAHIT-GT " + \
+    global megagta_version_str
+    megagta_version_str = "MegaGTA " + \
                           subprocess.Popen([opt.bin_dir + "megagta", "dumpversion"],
                                            stdout=subprocess.PIPE).communicate()[0].rstrip().decode('utf-8')
 
@@ -801,7 +801,7 @@ def main(argv = None):
         console.setFormatter(formatter)
         logging.getLogger('').addHandler(console)
 
-        logging.info(megahit_version_str)
+        logging.info(megagta_version_str)
         logging.info("--- [%s] Start. Number of CPU threads %d ---" % (datetime.now().strftime("%c"), opt.num_cpu_threads))
         logging.info("--- [%s] k list: %s ---" % (datetime.now().strftime("%c"), ','.join(map(str, opt.k_list))))
 
