@@ -38,7 +38,7 @@ usage_message = '''
 Copyright (c) The University of Hong Kong
 
 Usage:
-  megahit_gt.py [options] {-1 <pe1> -2 <pe2> | --12 <pe12> | -r <se>} -g gene_list.txt [-o <out_dir>]
+  megagta.py [options] {-1 <pe1> -2 <pe2> | --12 <pe12> | -r <se>} -g gene_list.txt [-o <out_dir>]
 
   Input options that can be specified for multiple times (supporting plain text and gz/bz2 extensions)
     -1                       <pe1>          comma-separated list of fasta/q paired-end #1 files, paired with files in <pe2>
@@ -51,7 +51,8 @@ Usage:
 Optional Arguments:
   Basic assembly options:
     -c/--min-count           <int>          minimum multiplicity for filtering k-mers [1]
-    -k/--k-list              <int,int,..>   comma-separated list of kmer size (in range 15-63) [29,35,44]
+    -k/--k-list              <int,int,..>   comma-separated list of kmer size (in range 15-63)
+                                            the last k must be a multiple of 3) [30,36,45]
     -p/--prune-len           <int>          prune the search if the score does not improve after <int> steps [20]
     -l/--low-cov-penalty     <float>        penalty for coverage one edges (in [0,1]) [0.5]
     --max-tip-len            <int>          max tip length [150]
@@ -67,7 +68,7 @@ Optional Arguments:
     -t/--num-cpu-threads     <int>          number of CPU threads, at least 2. Default: auto detect to use all CPU threads [auto]
 
   Output options:
-    -o/--out-dir             <string>       output directory [./megahit_gt_out]
+    -o/--out-dir             <string>       output directory [./megagta_out]
     --min-contig-len         <int>          minimum length of contigs to output [450]
     --keep-tmp-files                        keep all temporary files
 
@@ -87,12 +88,12 @@ class Options():
     def __init__(self):
         self.host_mem = 0.9
         self.gpu_mem = 0
-        self.out_dir = "./megahit_gt_out/"
+        self.out_dir = "./megagta_out/"
         self.min_contig_len = 450
         self.max_tip_len = 150
         self.prune_len = 20
         self.low_cov_penalty = 0.5
-        self.k_list = [29,35,44]
+        self.k_list = [30,36,45]
         self.min_count = 1
         self.bin_dir = sys.path[0] + "/"
         self.no_mercy = False
@@ -261,8 +262,10 @@ def check_opt():
     if len(opt.k_list) == 0:
         raise Usage("k list should not be empty!")
 
-    if opt.k_list[0] < 15 or opt.k_list[len(opt.k_list) - 1] > 127:
-        raise Usage("All k's should be in range [15, 127]")
+    if opt.k_list[0] < 15 or opt.k_list[len(opt.k_list) - 1] > 63:
+        raise Usage("All k's should be in range [15, 63]")
+    if opt.k_list[len(opt.k_list) - 1] % 3 != 0:
+        raise Usage("The last k must be a multiple of 3")
 
     if opt.use_gpu == 0:
         opt.gpu_mem = 0
@@ -348,14 +351,14 @@ def prepare_continue():
     print("Continue from check point " + str(opt.last_cp), file=sys.stderr)
 
 def check_bin():
-    for subprogram in ["megahit_gt"]:
+    for subprogram in ["megagta"]:
         if not os.path.exists(opt.bin_dir + subprogram):
             raise Usage("Cannot find sub-program \"" + subprogram + "\", please recompile.")
 
 def get_version():
     global megahit_version_str
     megahit_version_str = "MEGAHIT-GT " + \
-                          subprocess.Popen([opt.bin_dir + "megahit_gt", "dumpversion"],
+                          subprocess.Popen([opt.bin_dir + "megagta", "dumpversion"],
                                            stdout=subprocess.PIPE).communicate()[0].rstrip().decode('utf-8')
 
 def graph_prefix(kmer_k):
@@ -433,7 +436,7 @@ def write_lib():
 def build_lib():
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        build_lib_cmd = [opt.bin_dir + "megahit_gt", "buildlib",
+        build_lib_cmd = [opt.bin_dir + "megagta", "buildlib",
                          opt.lib,
                          opt.lib]
 
@@ -546,7 +549,7 @@ def build_graph(k, assist_seq):
                      "--num_output_threads", str(phase1_out_threads),
                      "--read_lib_file", opt.lib]
 
-        cmd = [opt.bin_dir + "megahit_gt", "buildgraph"] + count_opt
+        cmd = [opt.bin_dir + "megagta", "buildgraph"] + count_opt
         if not opt.no_mercy:
             cmd.append("--need_mercy")
 
@@ -568,13 +571,13 @@ def build_graph(k, assist_seq):
             ret_code = p.wait()
 
             if ret_code != 0:
-                logging.error("Error occurs when running \"megahit_gt count/read2sdbg\", please refer to %s for detail" % log_file_name())
+                logging.error("Error occurs when running \"megagta count/read2sdbg\", please refer to %s for detail" % log_file_name())
                 logging.error("[Exit code %d] " % ret_code)
                 exit(ret_code)
 
         except OSError as o:
             if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-                logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
+                logging.error("Error: sub-program megagta not found, please recompile MEGAHIT-GT")
             exit(1)
         except KeyboardInterrupt:
             p.terminate()
@@ -587,7 +590,7 @@ def assemble(k):
     if (not opt.continue_mode) or (cp > opt.last_cp):
         min_standalone = 400 # TODO HARDCODE
 
-        assembly_cmd = [opt.bin_dir + "megahit_gt", "denovo",
+        assembly_cmd = [opt.bin_dir + "megagta", "denovo",
                         "-s", graph_prefix(k),
                         "-o", graph_prefix(k),
                         "-t", str(opt.num_cpu_threads),
@@ -641,7 +644,7 @@ def find_seed(k, gene):
         index_k = opt.k_list.index(k)
         if index_k > 0:
             parameter += [contig_file(opt.k_list[index_k - 1])]
-        cmd = [opt.bin_dir + "megahit_gt", "findstart"] + parameter
+        cmd = [opt.bin_dir + "megagta", "findstart"] + parameter
 
         try:
             logging.info("--- [%s] Finding starting kmers for %s k = %d ---" % (datetime.now().strftime("%c"), gene, k))
@@ -666,7 +669,7 @@ def find_seed(k, gene):
 
         except OSError as o:
             if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-                logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
+                logging.error("Error: sub-program megagta not found, please recompile MEGAHIT-GT")
             exit(1)
         except KeyboardInterrupt:
             p.terminate()
@@ -678,7 +681,7 @@ def search_contigs(k):
     if (not opt.continue_mode) or (cp > opt.last_cp):
         parameter = [graph_prefix(k), opt.gene_list, graph_prefix(k), graph_prefix(k),
                      str(opt.prune_len), str(opt.low_cov_penalty), str(min(12, opt.num_cpu_threads))]
-        cmd = [opt.bin_dir + "megahit_gt", "search"] + parameter
+        cmd = [opt.bin_dir + "megagta", "search"] + parameter
 
         try:
             logging.info("--- [%s] Searching contigs for k = %d ---" % (datetime.now().strftime("%c"), k))
@@ -708,7 +711,7 @@ def search_contigs(k):
 
         except OSError as o:
             if o.errno == errno.ENOTDIR or o.errno == errno.ENOENT:
-                logging.error("Error: sub-program megahit_gt not found, please recompile MEGAHIT-GT")
+                logging.error("Error: sub-program megagta not found, please recompile MEGAHIT-GT")
             exit(1)
 
         except KeyboardInterrupt:
@@ -720,7 +723,7 @@ def filter_contigs(input_file, output_file):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
         parameter = [str(opt.min_contig_len)]
-        cmd = [opt.bin_dir + "megahit_gt", "filterbylen"] + parameter
+        cmd = [opt.bin_dir + "megagta", "filterbylen"] + parameter
 
         try:
             logging.info("--- [%s] Filtering contigs with minimum length = %d %s->%s ---" % (datetime.now().strftime("%c"), opt.min_contig_len, input_file, output_file))
@@ -748,7 +751,7 @@ def filter_contigs(input_file, output_file):
 def translate_to_aa(input_file, output_file):
     global cp
     if (not opt.continue_mode) or (cp > opt.last_cp):
-        cmd = [opt.bin_dir + "megahit_gt", "translate"] + [input_file]
+        cmd = [opt.bin_dir + "megagta", "translate"] + [input_file]
 
         try:
             logging.info("--- [%s] Translating nucl contigs to aa contigs %s->%s ---" % (datetime.now().strftime("%c"), input_file, output_file))
@@ -808,6 +811,9 @@ def main(argv = None):
         write_lib()
         build_lib()
         parse_gene_list()
+
+        for i in range(len(opt.k_list)):
+            opt.k_list[i]--
 
         for i in range(len(opt.k_list)):
             k = opt.k_list[i]
