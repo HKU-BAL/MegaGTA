@@ -28,13 +28,12 @@
 #include "mem_file_checker-inl.h"
 #include "kseq.h"
 #include "utils.h"
-#include "kmer.h"
+#include "megahit_kmer.h"
 #include "packed_reads.h"
 #include "sequence_package.h"
 #include "read_lib_functions-inl.h"
 
 #include "lv2_cpu_sort.h"
-#include "lv2_gpu_functions.h"
 // helping functions
 
 extern void kt_dfor(int n_threads, void (*func)(void *, long, int), void *data, long n);
