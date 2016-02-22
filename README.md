@@ -17,6 +17,13 @@ bin/post_proc.sh -g gene_resources_dir -d output_dir/contigs -m 16G -c 0.01
 
 ```
 
+### Required tools
+* HMMER 3.1 (http://hmmer.janelia.org)
+* UCHIME (http://drive5.com/usearch/manual/uchime_algo.html)
+
+
+* In `bin/post_proc.sh` users are supposed to modidy the paths for HMMER & UCHIME to their own ones.
+
 * `gene_list.txt` is a config file for specifying interested genes and some of their information required by the assembly:
 ```
 		rplB rplB_forward.hmm rplB_reverse.hmm rplB_ref_alignment.faa
@@ -28,6 +35,6 @@ bin/post_proc.sh -g gene_resources_dir -d output_dir/contigs -m 16G -c 0.01
 ```
 		megahit_gt/share/RDPTools/Xander_assembler/gene_resource
 ```
-If genes not included are in interest, please follow the [README][1] file of Xander to prepare the resource.
+* If genes not included are in interest, please follow the [README file of Xander][1] to prepare the resource.
 
 [1]: https://github.com/rdpstaff/Xander_assembler/blob/master/README.md
