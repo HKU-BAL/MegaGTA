@@ -1,7 +1,7 @@
 megaGTA
 =========
 
-## Getting Started
+### Getting Started
 
 ```
 git clone git@bitbucket.org:almighty_mimicry/kingassembler.git
@@ -17,14 +17,14 @@ bin/post_proc.sh -g gene_resources_dir -d output_dir/contigs -m 16G -c 0.01
 
 ```
 
-### Required tools
+### Required Tools
 * HMMER 3.1 (http://hmmer.janelia.org)
 * UCHIME (http://drive5.com/usearch/manual/uchime_algo.html)
 
-
+### Simple Settings
 * In `bin/post_proc.sh` users are supposed to modidy the paths for HMMER & UCHIME to their own ones.
 
-* `gene_list.txt` is a config file for specifying interested genes and some of their information required by the assembly:
+* `gene_list.txt` is a config file for specifying interested genes and some of their information required by the assembly, e.g.:
 ```
 		rplB rplB_forward.hmm rplB_reverse.hmm rplB_ref_alignment.faa
 		nirK nirK_forward.hmm nirK_reverse.hmm nirK_ref_alignment.faa
