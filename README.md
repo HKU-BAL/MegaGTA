@@ -5,7 +5,7 @@ MegaGTA
 
 ```
 git clone https://github.com/HKU-BAL/megagta.git
-cd kingAssembler
+cd megagta
 git submodule update --init --recursive
 ./make.sh
 
