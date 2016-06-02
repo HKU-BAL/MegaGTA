@@ -754,6 +754,8 @@ void s1_lv2_output_(int from, int to, int tid, read2sdbg_global_t &globals, uint
                     int l_offset = strand == 0 ? offset : offset + 1;
                     int r_offset = strand == 0 ? offset + 1 : offset;
 
+                    if (read_id >= globals.num_short_reads) { continue; } // then we don't need to judge whether it's solid
+
                     // mark this is a solid edge
                     globals.is_solid.set(globals.num_k1_per_read * read_id + offset);
 
