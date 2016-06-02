@@ -34,7 +34,7 @@ nirK share/RDPTools/Xander_assembler/gene_resource/nirK/nirK_forward.hmm share/R
 
 * `gene_resources_dir` is an input folder for post-processing which follows the format Xander assembler used. It can be found through:
 ```
-megahit_gt/share/RDPTools/Xander_assembler/gene_resource
+megagta/share/RDPTools/Xander_assembler/gene_resource
 ```
 * If genes not included are in interest, please follow the [README file of Xander][1] to prepare the resource.
 
