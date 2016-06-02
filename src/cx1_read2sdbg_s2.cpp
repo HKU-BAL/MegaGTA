@@ -173,6 +173,9 @@ void s2_read_mercy_prepare(read2sdbg_global_t &globals) {
             // go read by read
             while (i != end_idx[tid]) {
                 uint64_t read_id = globals.package.get_id(mercy_cand[i] >> 2);
+                // if (read_id >= globals.num_short_reads) {
+                //     fprintf(stderr, "%llu\n", read_id);
+                // }
                 assert(!read_marker.get(read_id));
                 read_marker.set(read_id);
                 int first_0_out = globals.max_read_length + 1;
