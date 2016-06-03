@@ -28,8 +28,8 @@ bin/post_proc.sh -g gene_resources_dir -d output_dir/contigs -m 16G -c 0.01
 
 * `gene_list.txt` is a config file. Each line of the file specifying interested genes and some of their information required by the assembly, including forward/reverse HMM, and the reference multiple sequence alignment of that gene family. Following is an example.
 ```
-rplB share/RDPTools/Xander_assembler/gene_resource/rplB/rplB_forward.hmm share/RDPTools/Xander_assembler/gene_resource/rplB/rplB_reverse.hmm share/RDPTools/Xander_assembler/gene_resource/rplB/rplB_ref_alignment.faa
-nirK share/RDPTools/Xander_assembler/gene_resource/nirK/nirK_forward.hmm share/RDPTools/Xander_assembler/gene_resource/nirK/nirK_reverse.hmm share/RDPTools/Xander_assembler/gene_resource/nirK/nirK_ref_alignment.faa
+rplB share/RDPTools/Xander_assembler/gene_resource/rplB/for_enone.hmm share/RDPTools/Xander_assembler/gene_resource/rplB/rev_enone.hmm share/RDPTools/Xander_assembler/gene_resource/rplB/ref_aligned.faa
+nirK share/RDPTools/Xander_assembler/gene_resource/nirK/for_enone.hmm share/RDPTools/Xander_assembler/gene_resource/nirK/rev_enone.hmm share/RDPTools/Xander_assembler/gene_resource/nirK/ref_aligned.faa
 ```
 
 * `gene_resources_dir` is an input folder for post-processing which follows the format Xander assembler used. It can be found through:
