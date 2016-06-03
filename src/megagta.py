@@ -51,7 +51,7 @@ Usage:
 Optional Arguments:
   Basic assembly options:
     -c/--min-count           <int>          minimum multiplicity for filtering k-mers [1]
-    -k/--k-list              <int,int,..>   comma-separated list of kmer size (in range 15-63)
+    -k/--k-list              <int,int,..>   comma-separated list of kmer size (in range 15-127)
                                             the last k must be a multiple of 3) [30,36,45]
     -p/--prune-len           <int>          prune the search if the score does not improve after <int> steps [20]
     -l/--low-cov-penalty     <float>        penalty for coverage one edges (in [0,1]) [0.5]
@@ -262,8 +262,8 @@ def check_opt():
     if len(opt.k_list) == 0:
         raise Usage("k list should not be empty!")
 
-    if opt.k_list[0] < 15 or opt.k_list[len(opt.k_list) - 1] > 63:
-        raise Usage("All k's should be in range [15, 63]")
+    if opt.k_list[0] < 15 or opt.k_list[len(opt.k_list) - 1] > 127:
+        raise Usage("All k's should be in range [15, 127]")
     if opt.k_list[len(opt.k_list) - 1] % 3 != 0:
         raise Usage("The last k must be a multiple of 3")
 
