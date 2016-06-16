@@ -66,8 +66,8 @@ megagta: megagta.o assembler.o unitig_graph.o assembly_algorithms.o build_graph.
 			options_description.o $(DEP)
 	$(CXX) $(CXXFLAGS) megagta.o assembler.o unitig_graph.o assembly_algorithms.o build_graph.o cx1_read2sdbg_s1.o cx1_read2sdbg_s2.o kthread.o sequence_manager.o build_read_lib.o read_stat.o filter_by_len.o search.o fast_kmer_filter.o translate.o options_description.o succinct_dbg.o nucl_kmer.o codon.o hmm_graph_search.o city.o prot_kmer.o branch_group.o $(LIB) $(LIB_CODON) -o megagta
 
-path_viewer: path_viewer.o succinct_dbg.o assembly_algorithms.o
-	$(CXX) $(CXXFLAGS)  path_viewer.o succinct_dbg.o assembly_algorithms.o -o path_viewer $(LIB)
+path_viewer: path_viewer.o succinct_dbg.o assembly_algorithms.o branch_group.o
+	$(CXX) $(CXXFLAGS)  path_viewer.o succinct_dbg.o assembly_algorithms.o branch_group.o -o path_viewer $(LIB)
 
 false_positive_checker: false_positive_checker.o succinct_dbg.o
 	$(CXX) $(CXXFLAGS)  false_positive_checker.o succinct_dbg.o -o false_positive_checker $(LIB)
