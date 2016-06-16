@@ -13,6 +13,7 @@
 #include "sequence/NTSequence.h"
 #include "sequence/AASequence.h"
 #include "sequence_manager.h"
+#include <fstream>
 
 #include <time.h>
 #include <sys/time.h>
@@ -42,6 +43,7 @@ struct Seed {
     }
 };
 
+bool fexists(const char *filename);
 void ProcessSequenceMulti(const string &sequence, HashSetST<ProtKmer> &kmerSet, const int &kmer_size, vector<Seed> &candidates);
 
 int find_start(int argc, char **argv) {
@@ -50,6 +52,14 @@ int find_start(int argc, char **argv) {
 
     if (argc == 1) {
         fprintf(stderr, "Usage: %s <ref_seq> <read.lib> <k_size> [num_threads=0]\n", argv[0]);
+        exit(1);
+    }
+
+    if (fexists(argv[1])==false) {
+        fprintf(stderr, "File %s doesn't exist\n", argv[1]);
+        exit(1);
+    } else if (fexists(argv[2])==false) {
+        fprintf(stderr, "File %s doesn't exist\n", argv[2]);
         exit(1);
     }
 
@@ -104,7 +114,7 @@ int find_start(int argc, char **argv) {
 
     while ((count = seq_manager.ReadShortReads(kMaxNumReads, kMaxNumBases, append, reverse)) > 0) {
         xlog("Processing %d reads\n", count);
-#pragma omp parallel for schedule(dynamic, 1)
+    #pragma omp parallel for schedule(dynamic, 1)
             for (int i = 0; i < count; i++) {
                 int len = package.length(i);
                 if (len >= kmer_size) {
@@ -204,4 +214,9 @@ void ProcessSequenceMulti(const string &sequence, HashSetST<ProtKmer> &kmerSet, 
             }
         }
     }
+}
+
+bool fexists(const char *filename) {
+  std::ifstream ifile(filename);
+  return (bool)ifile;
 }
